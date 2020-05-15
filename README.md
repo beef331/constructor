@@ -5,17 +5,17 @@ Simply use Nimble to install, then
 ```
 import constructor
 type
-    Awwwbject = object
+    Awbject = object
         awesome : float
         beautiful : string
         coolInt : int
-Awwbject.construct("awesome","coolInt",true) #bool indicates exporting
+Awbject.construct("awesome","coolInt",true) #bool indicates exporting
 
 #[
 The macro then creates
-proc newAwwbject(awesome : float, coolInt : int): Awwbject =
-    Awwbject(awesome:awesome,coolInt : coolInt)
+proc newAwbject(awesome : float, coolInt : int): Awbject =
+    Awbject(awesome:awesome,coolInt : coolInt)
 ]#
 
-newAwwbject(1.5,10)# so now you can call this instead of
-newAwwbject(awesome : 1.5, coolInt : 10)
+newAwbject(1.5,10)# so now you can call this instead of
+newAwbject(awesome : 1.5, coolInt : 10)
