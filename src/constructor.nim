@@ -40,6 +40,9 @@ macro construct*( T : typedesc[object | distinct], args : varargs[string], expNo
         constExpr : seq[NimNode]
     params.add(newIdentNode(nameSym))
     constExpr.add(newIdentNode(nameSym))
+
+    assert symType.len > 0, "No matched variable names"
+
     #Generates params
     for x in symType.keys:
         params.add(newIdentDefs(
