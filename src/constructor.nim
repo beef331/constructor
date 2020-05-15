@@ -3,7 +3,7 @@ import macros, strformat, tables, strutils
 macro construct*( T : typedesc[object | distinct], args : varargs[string], expNode : bool): untyped=
     ##Generates a constructor for a given type
 
-    assert args.len > 1, "You did not pass any arguements"
+    assert args.len > 0, "You did not pass any arguements"
     #Get strings from args
     var vars : seq[string]
     for x in args:
@@ -24,7 +24,7 @@ macro construct*( T : typedesc[object | distinct], args : varargs[string], expNo
         rootName = $node[0]
     assert node.len > 0, fmt"{nameSym} is not an object, no constructor made" 
     #Name type table
-    var symType  = initOrderedTable[string,string]()
+    var symType  = initOrderedTable[string,NimNode]()
 
     #Ensures the variables exist on the object
     for n in node[2][2]:
@@ -33,7 +33,7 @@ macro construct*( T : typedesc[object | distinct], args : varargs[string], expNo
         for x in vars:
             if(x == lowered):
                 assert (not symType.contains(x)), "Duplicate variable names detected"
-                symType.add($n[0],$n[1])
+                symType.add($n[0],n[1])
 
     var 
         params : seq[NimNode]
@@ -44,7 +44,7 @@ macro construct*( T : typedesc[object | distinct], args : varargs[string], expNo
     for x in symType.keys:
         params.add(newIdentDefs(
                     ident(x),
-                    ident(symType[x]),
+                    symType[x],
                     newEmptyNode()
                     )
                 )
