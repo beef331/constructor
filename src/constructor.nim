@@ -1,10 +1,11 @@
 import macros, strformat, tables, strutils
 
-macro construct*( T : typedesc[object | distinct], args : varargs[(string, untyped)], expNode : bool): untyped=
+macro construct*( T : typedesc[object | distinct], expNode : bool, args : varargs[untyped]): untyped=
     ##Generates a constructor for a given type
     assert args.len > 0, "You did not pass any arguements"
     #Get strings from args
     var vars : seq[string]
+    echo args.treeRepr
     var defaults : seq[NimNode]
     for x in args:
         var lowered = ($x[0]).replace("_","")
@@ -41,7 +42,7 @@ macro construct*( T : typedesc[object | distinct], args : varargs[(string, untyp
                     if(child[1].kind == nnkSym):
                         cleanNode[child[0]] = ident($child[1])
                 symType.add($n[0],cleanNode)
-                if(defaults[index].kind == nnkSym and $defaults[index] == "required"):
+                if(defaults[index].kind == nnkIdent and $defaults[index] == "required"):
                     symDefault.add($n[0],newEmptyNode())
                 else:
                     symDefault.add($n[0], defaults[index])
@@ -88,20 +89,14 @@ macro construct*( T : typedesc[object | distinct], args : varargs[(string, untyp
     echo procNode.treeRepr
     return procNode
 
-proc required*() = 
-    ##This is used for required params to force values
-    discard
-
 type
     Huh = object
         a : int
         b : array[4,float]
         c : float
 
-
-
-Huh.construct(("a", required), ("b", [1.3,2.5,5,10.3]),false)
-Huh.construct(("b", required), ("c", 10.1),false)
+construct(Huh,false, ("a", required), ("b", [1.3,2.5,5,10.3]))
+Huh.construct(false,("b", required), ("c", 10.1))
 
 echo newHuh(11, [5.5,5.3,10.0,12.3])
 echo newHuh([10.3,13.55,3.421,2.123], 11.321)
