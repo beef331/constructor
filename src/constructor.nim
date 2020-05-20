@@ -91,7 +91,7 @@ macro construct*( T : typedesc[object | distinct | ref], expNode : bool, args : 
     if(exported):
         procName = newNimNode(nnkPostfix).add(ident("*"),ident(procNameStr))
     else:
-        procName = ident(fmt"new{nameSym}")
+        procName = ident(procNameStr)
 
     #Builds the nodes
     var 
