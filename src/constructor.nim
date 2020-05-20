@@ -2,14 +2,15 @@ import macros, strformat, tables, strutils
 
 macro construct*( T : typedesc[object | distinct], expNode : bool, args : varargs[untyped]): untyped=
     ##Generates a constructor for a given type
-    assert args.len > 0, "You did not pass any arguements"
+    doAssert args.len > 0, "You did not pass any arguements"
     #Get strings from args
     var vars : seq[string]
-    echo args.treeRepr
     var defaults : seq[NimNode]
     for x in args:
+        doAssert x.len > 1, fmt"Use a (string, value)"
         var lowered = ($x[0]).replace("_","")
         lowered = lowered[0] & lowered[1..lowered.high].toLower()
+        doAssert (not vars.contains(lowered)), fmt"Duplicated Variable {lowered}"
         vars.add(lowered)
         defaults.add(x[1])
 
@@ -23,18 +24,20 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
         node = node[2][0].getImpl
         isDistinct = true
         rootName = $node[0]
-    assert node.len > 0, fmt"{nameSym} is not an object, no constructor made" 
+    doAssert node.len > 0, fmt"{nameSym} is not an object, no constructor made" 
+    
     #Name type table
     var symType = initOrderedTable[string,NimNode]()
     var symDefault = initOrderedTable[string,NimNode]()
+
     #Ensures the variables exist on the object
-    for n in node[2][2]:
-        var lowered = ($n[0]).replace("_")
-        lowered = lowered[0] & lowered[1..lowered.high].toLower()
-        var index = 0
-        for x in vars:
+   
+    var index = 0
+    for x in vars:
+        for n in node[2][2]:
+            var lowered = ($n[0]).replace("_")
+            lowered = lowered[0] & lowered[1..lowered.high].toLower()
             if(x == lowered):
-                assert (not symType.contains(x)), "Duplicate variable names detected"
 
                 var cleanNode = copyNimTree(n[1])
                 if(cleanNode.kind == nnkSym): cleanNode = ident($n[1])
@@ -42,18 +45,24 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
                     if(child[1].kind == nnkSym):
                         cleanNode[child[0]] = ident($child[1])
                 symType.add($n[0],cleanNode)
-                if(defaults[index].kind == nnkIdent and $defaults[index] == "required"):
+
+                if(defaults[index].kind == nnkIdent and $defaults[index] == "req"):
                     symDefault.add($n[0],newEmptyNode())
                 else:
-                    symDefault.add($n[0], defaults[index])
-            inc index
+                    symDefault.add($n[0], defaults[index])                
+                break
+
+        inc index
+
+    doAssert (symType.len == vars.len), fmt"Incorrect field names in {vars}"
+
     var 
         params : seq[NimNode]
         constExpr : seq[NimNode]
     params.add(newIdentNode(nameSym))
     constExpr.add(newIdentNode(nameSym))
 
-    assert symType.len > 0, "No matched variable names"
+    doAssert symType.len > 0, "No matched variable names"
 
     #Generates params
     for x in symType.keys:
@@ -86,17 +95,4 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
     let
         bodyNode = newStmtList(retNode)
         procNode = newStmtList(newProc(procName,params,bodyNode))
-    echo procNode.treeRepr
     return procNode
-
-type
-    Huh = object
-        a : int
-        b : array[4,float]
-        c : float
-
-construct(Huh,false, ("a", required), ("b", [1.3,2.5,5,10.3]))
-Huh.construct(false,("b", required), ("c", 10.1))
-
-echo newHuh(11, [5.5,5.3,10.0,12.3])
-echo newHuh([10.3,13.55,3.421,2.123], 11.321)
