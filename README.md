@@ -2,7 +2,7 @@
 Nim automated object constructors, it creates constructors with specified parameters to avoid named parameter constructors.
 
 Simply use Nimble to install, then
-```
+```nim
 import constructor
 
 type
