@@ -31,7 +31,7 @@ Bwbject.construct(false,(a, req),(b, req))
                     coolInt : int = 10): Awbject =
         Awbject(awesome : awesome, coolInt : coolInt, beautiful : beautiful)
 
-    proc newBwbject(a : int, b : string): Awbject =
+    proc newBwbject(a : int, b : string): Bwbject =
         Bwbject(a : a, b : b)
 ]#
 
