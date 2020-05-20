@@ -1,8 +1,9 @@
 # Constructor
-Nim automated object constructors, it creates constructors with specificied parameters to avoid named parameter constructors.
+Nim automated object constructors, it creates constructors with specified parameters to avoid named parameter constructors.
 
 Simply use Nimble to install, then
 ```
+import constructor
 
 type
     Awbject = object
