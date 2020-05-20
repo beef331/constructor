@@ -1,6 +1,6 @@
 import macros, strformat, tables, strutils
 
-macro construct*( T : typedesc[object | distinct], expNode : bool, args : varargs[untyped]): untyped=
+macro construct*( T : typedesc[object | distinct | ref], expNode : bool, args : varargs[untyped]): untyped=
     ##Generates a constructor for a given type
     doAssert args.len > 0, "You did not pass any arguements"
     #Get strings from args
@@ -24,6 +24,7 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
         node = node[2][0].getImpl
         isDistinct = true
         rootName = $node[0]
+
     doAssert node.len > 0, fmt"{nameSym} is not an object, no constructor made" 
     
     #Name type table
@@ -33,8 +34,16 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
     #Ensures the variables exist on the object
    
     var index = 0
+    var 
+        varNode : NimNode
+        isRef = node[2].kind == nnkRefTy
+    if(isRef):
+        varNode = node[2][0][2]
+    else:
+        varNode = node[2][2]
+
     for x in vars:
-        for n in node[2][2]:
+        for n in varNode:
             var lowered = ($n[0]).replace("_")
             lowered = lowered[0] & lowered[1..lowered.high].toLower()
             if(x == lowered):
@@ -75,10 +84,12 @@ macro construct*( T : typedesc[object | distinct], expNode : bool, args : vararg
         constExpr.add(newColonExpr(newIdentNode(x),newIdentNode(x)))
     
     #Export using the bool provided
-    let exported = expNode.boolVal
+    let 
+        exported = expNode.boolVal
+        procNameStr = if(isRef): fmt"new{nameSym}" else: fmt"init{nameSym}"
     var procName : NimNode
     if(exported):
-        procName = newNimNode(nnkPostfix).add(ident("*"),ident(fmt"new{nameSym}"))
+        procName = newNimNode(nnkPostfix).add(ident("*"),ident(procNameStr))
     else:
         procName = ident(fmt"new{nameSym}")
 
