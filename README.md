@@ -18,7 +18,7 @@ Awbject.construct(false):
     awesome: required
     coolInt: 10
 Awbject.construct(true):
-    beautiful: "This is indeed)
+    beautiful: "This is indeed"
     awesome: 1.1
 
 Bwbject.construct(false):
