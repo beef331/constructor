@@ -1,4 +1,4 @@
-import constructor
+import ../src/constructor
 type
     Awbject = object
         awesome : float

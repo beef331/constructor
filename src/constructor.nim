@@ -34,7 +34,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     for vari in varDecl:
       if vari.kind == nnkIdent: identType[$vari] = varType
 
-  #Proc name
+  #If ref the convention is new, else init
   let constrName = (if isRef: "new" else: "init") & nameSym
 
   #First parameter is return type which is the type this constructor is for
@@ -56,7 +56,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     objConstr.add(newColonExpr(param[0], param[0]))
   #Set result so we can use the object later in the `_` code
   let assignment = newAssignment(ident("result"), objConstr)
-  #If ref the convention is new, else init
+  #If we're supposed to export it add posfix
   let nameNode = if expNode : postfix(ident(constrName), "*") else: ident(constrName)
   #Dont have nil if there is no postConstructLogic
   let procBody = if postConstructLogic.isNil: newStmtList(assignment) else: newStmtList(assignment,postConstructLogic)
