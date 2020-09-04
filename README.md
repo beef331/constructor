@@ -24,7 +24,7 @@ Awbject.construct(true):
     #[
         Can call code after created.
         'result' is where the constructed variable is stored.
-    ]
+    ]#
     echo "Heh"
 
 Bwbject.construct(false):
