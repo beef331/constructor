@@ -1,109 +1,66 @@
-import macros, strformat, tables, strutils
+import macros, tables
 
-macro construct*( T : typedesc[object | distinct | ref], expNode : bool, args : varargs[untyped]): untyped=
-    ##Generates a constructor for a given type
-    doAssert args.len > 0, "You did not pass any arguements"
-    #Get strings from args
-    var vars : seq[string]
-    var defaults : seq[NimNode]
-    for x in args:
-        doAssert x.len > 1, fmt"Use a (string, value)"
-        var lowered = ($x[0]).replace("_","")
-        lowered = lowered[0] & lowered[1..lowered.high].toLower()
-        doAssert (not vars.contains(lowered)), fmt"Duplicated Variable {lowered}"
-        vars.add(lowered)
-        defaults.add(x[1])
+macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, body: untyped): untyped=
+  var 
+    postConstructLogic: NimNode
+    requiredParams: seq[NimNode]
+    optionalParams: seq[NimNode]
 
-    var 
-        node = T.getImpl
-        isDistinct : bool = false
-        rootName : string
-    let nameSym = $node[0]
-    #If distinct get original type
-    if(node[2].kind == nnkDistinctTy):
-        node = node[2][0].getImpl
-        isDistinct = true
-        rootName = $node[0]
+  for call in body:
+    if $call[0] == "_": postConstructLogic = call[1] #This is the post constructed node position
+    elif call[1][0].kind == nnkIdent and $call[1][0] == "required" :
+      requiredParams.add(call) #We know it's required
+    else: optionalParams.add(call) #It's an optional value
 
-    doAssert node.len > 0, fmt"{nameSym} is not an object, no constructor made" 
-    
-    #Name type table
-    var symType = initOrderedTable[string,NimNode]()
-    var symDefault = initOrderedTable[string,NimNode]()
+  var node = T.getImpl #Get the Type Implementation
+  let nameSym = $T
 
-    #Ensures the variables exist on the object
-   
-    var index = 0
-    var 
-        varNode : NimNode
-        isRef = node[2].kind == nnkRefTy
-    if(isRef):
-        varNode = node[2][0][2]
-    else:
-        varNode = node[2][2]
+  #If distinct get original type
+  if(node[2].kind == nnkDistinctTy):
+    node = node[2][0].getImpl
 
-    for x in vars:
-        for n in varNode:
-            var lowered = ($n[0]).replace("_")
-            lowered = lowered[0] & lowered[1..lowered.high].toLower()
-            if(x == lowered):
+  #Check if it's a ref object
+  var isRef = false
+  if(node[2].kind == nnkRefTy):
+    isRef = true
+    node = node[2][0][2] #Get Reclist
+  else: node = node[2][2] #Get Reclist
 
-                var cleanNode = copyNimTree(n[1])
-                if(cleanNode.kind == nnkSym): cleanNode = ident($n[1])
-                for child in cleanNode.pairs:
-                    if(child[1].kind == nnkSym):
-                        cleanNode[child[0]] = ident($child[1])
-                symType.add($n[0],cleanNode)
+  var identType = initTable[string, NimNode]()
 
-                if(defaults[index].kind == nnkIdent and $defaults[index] == "req"):
-                    symDefault.add($n[0],newEmptyNode())
-                else:
-                    symDefault.add($n[0], defaults[index])                
-                break
+  #Go for all vars and adding them to an identTable
+  for varDecl in node:
+    let varType = ident($varDecl.findChild(it.kind == nnkSym))
+    for vari in varDecl:
+      if vari.kind == nnkIdent: identType[$vari] = varType
 
-        inc index
+  #Proc name
+  let constrName = (if isRef: "new" else: "init") & nameSym
 
-    doAssert (symType.len == vars.len), fmt"Incorrect field names in {vars}"
+  #First parameter is return type which is the type this constructor is for
+  var parameters: seq[NimNode] = @[ident(nameSym)]
+  #For each parameter generate a new identdef
+  for req in requiredParams:
+    parameters.add(newIdentDefs(req[0], identType[$req[0]]))
 
-    var 
-        params : seq[NimNode]
-        constExpr : seq[NimNode]
-    params.add(newIdentNode(nameSym))
-    constExpr.add(newIdentNode(nameSym))
+  for opt in optionalParams:
+    parameters.add(newIdentDefs(opt[0], identType[$opt[0]], opt[1][0]))
 
-    doAssert symType.len > 0, "No matched variable names"
-
-    #Generates params
-    for x in symType.keys:
-        params.add(newIdentDefs(
-                    ident(x),
-                    symType[x],
-                    symDefault[x]
-                    )
-                )
-        constExpr.add(newColonExpr(newIdentNode(x),newIdentNode(x)))
-    
-    #Export using the bool provided
-    let 
-        exported = expNode.boolVal
-        procNameStr = if(isRef): fmt"new{nameSym}" else: fmt"init{nameSym}"
-    var procName : NimNode
-    if(exported):
-        procName = newNimNode(nnkPostfix).add(ident("*"),ident(procNameStr))
-    else:
-        procName = ident(procNameStr)
-
-    #Builds the nodes
-    var 
-        retNode : NimNode
-    if(isDistinct):
-        constExpr[0] = ident(rootName)
-        retNode = newCall(ident(nameSym),newNimNode(nnkObjConstr).add(constExpr))
-    else:
-        retNode = newNimNode(nnkObjConstr).add(constExpr)
-
-
-    let
-        bodyNode = newStmtList(retNode)
-        procNode = newStmtList(newProc(procName,params,bodyNode))
-    return procNode
+  #Generate the constructor
+  #Ident tells the constructor the type
+  var objConstr = newNimNode(nnkObjConstr).add(ident($T))
+  #Generates a: a, for all arguements
+  for param in requiredParams:
+    objConstr.add(newColonExpr(param[0], param[0]))
+  for param in optionalParams:
+    objConstr.add(newColonExpr(param[0], param[0]))
+  #Set result so we can use the object later in the `_` code
+  let assignment = newAssignment(ident("result"), objConstr)
+  #If ref the convention is new, else init
+  let nameNode = if expNode : postfix(ident(constrName), "*") else: ident(constrName)
+  #Dont have nil if there is no postConstructLogic
+  let procBody = if postConstructLogic.isNil: newStmtList(assignment) else: newStmtList(assignment,postConstructLogic)
+  #Where all our work ends
+  result = newProc(nameNode,
+                   parameters,
+                   procBody)
