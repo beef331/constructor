@@ -20,6 +20,12 @@ Awbject.construct(false):
 Awbject.construct(true):
     beautiful: "This is indeed"
     awesome: 1.1
+    _:
+    #[
+        Can call code after created.
+        'result' is where the constructed variable is stored.
+    ]
+    echo "Heh"
 
 Bwbject.construct(false):
     a: required
