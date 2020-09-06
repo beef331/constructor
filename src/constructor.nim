@@ -30,7 +30,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
 
   #Go for all vars and adding them to an identTable
   for varDecl in node:
-    let varType = ident($varDecl.findChild(it.kind == nnkSym))
+    let varType = varDecl[1] #gets the type from the identdef
     for vari in varDecl:
       if vari.kind == nnkIdent: identType[$vari] = varType
 
