@@ -1,4 +1,4 @@
-import macros, tables, strutils
+import macros, tables, strutils, sequtils
 
 macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, body: untyped): untyped=
   var 
@@ -68,10 +68,11 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
                    parameters,
                    procBody)
 
-macro typeDef*(name: untyped, exported: bool, body: untyped): untyped=
+macro typeDef*(name: untyped, exported: static bool, body: untyped): untyped=
   result = newStmtList()
-  result.add quote do:
-    type `name` = object
+  let exportedName = if exported: postfix(name, "*") else: name #if we want to export the type make a postfix
+  result.add quote do: #Make typeDeff
+    type `exportedName` = object
   result[0][0][2][2] = newNimNode(nnkRecList) #rec list
   for varDecl in body: #For each group decl
     var node = varDecl[0]
@@ -79,74 +80,43 @@ macro typeDef*(name: untyped, exported: bool, body: untyped): untyped=
       isProp = varDecl[1].len > 1 and varDecl[1][1].kind == nnkStmtList
       typeVal = if varDecl[1].len > 1: varDecl[1][0] else: varDecl[1]
       lowerName = ident(($name).toLowerAscii)
-    if node.kind == nnkIdent:
-      let varName = node
-      if not isProp:
-        result[0][0][2][2].add newIdentDefs(varName, typeVal, newEmptyNode())
-      else:
-        let 
-          backerName = ident($varName & "Backer")
-          setterName = ident($varName & "=")
-        
-        var
-          setterBody: NimNode
-          getterBody: NimNode
-          hasGet = false
-          hasSet = false
-        for node in varDecl[1][1]:
-          if $node[0] == "get": 
-            getterBody = node[1]
-            hasGet = true
-          if $node[0] == "set": 
-            setterBody = node[1]
-            hasSet = true
-        result[0][0][2][2].add newIdentDefs(backerName, typeVal, newEmptyNode())
-
-        let
-          valueIdent = ident("value")
-          setter = quote do:
-            proc `setterName`(`lowerName`: var `name`, `valueIdent` : `typeVal`)=
-              `setterBody`
-          getter = quote do:
-            proc `varName`(`lowerName`: `name`): `typeVal`= 
-              `getterBody`
-
-        if hasSet: result.add setter
-        if hasGet: result.add getter
-
-    elif node.kind == nnkCommand:
-      for varName in node:
+    #All our expected nodes are either idents or commands
+    if node.kind in {nnkIdent, nnkCommand}:
+      #Reduces redundant code
+      let iterate = if node.kind == nnkIdent: @[node] else: toSeq(node.items)
+      for varName in iterate:
+        #Just add param to rec list if nnot prop 
         if not isProp:
           result[0][0][2][2].add newIdentDefs(varName, typeVal, newEmptyNode())
         else:
           let 
             backerName = ident($varName & "Backer")
-            setterName = ident($varName & "=")
-          
           var
             setterBody: NimNode
             getterBody: NimNode
-            hasGet = false
-            hasSet = false
+            getExported, setExported = false
+
+          #Extract information from the varDecl
           for node in varDecl[1][1]:
             if $node[0] == "get": 
-              getterBody = node[1]
-              hasGet = true
+              getExported = node[1].kind == nnkident and $node[1] == "true"
+              getterBody = if getExported: node[2] else: node[1]
             if $node[0] == "set": 
-              setterBody = node[1]
-              hasSet = true
+              setExported = node[1].kind == nnkident and $node[1] == "true"
+              setterBody = if setExported: node[2] else: node[1]
           result[0][0][2][2].add newIdentDefs(backerName, typeVal, newEmptyNode())
-        
-          
+
+          let 
+            setterName = if setExported: postfix(ident($varName & "="), "*") else: ident($varName & "=") 
+            getterName = if getExported: postfix(varName, "*") else: varName
           let
             valueIdent = ident("value")
             setter = quote do:
               proc `setterName`(`lowerName`: var `name`, `valueIdent` : `typeVal`)=
                 `setterBody`
             getter = quote do:
-              proc `varName`(`lowerName`: `name`): `typeVal`= 
+              proc `getterName`(`lowerName`: `name`): `typeVal`= 
                 `getterBody`
 
-          if hasSet: result.add setter
-          if hasGet: result.add getter
-  echo result.repr
+          if not setterBody.isNil: result.add setter
+          if not getterBody.isNil: result.add getter
