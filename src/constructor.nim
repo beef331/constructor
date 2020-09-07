@@ -11,7 +11,6 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     elif call[1][0].kind == nnkIdent and $call[1][0] == "required" :
       requiredParams.add(call) #We know it's required
     else: optionalParams.add(call) #It's an optional value
-
   var node = T.getImpl #Get the Type Implementation
   let nameSym = $T
 
@@ -30,11 +29,15 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
 
   #Go for all vars and adding them to an identTable
   for varDecl in node:
-    let varType = varDecl[1] #gets the type from the identdef
+    let varType = varDecl[1]
     for vari in varDecl:
-      if vari.kind == nnkIdent: identType[$vari] = varType
+      case vari.kind:
+        of nnkIdent: identType[$vari] = varType
+        of nnkPostfix: identType[$vari[1]] = varType #if exported it uses a postfix
+        else: discard
 
-  #If ref the convention is new, else init
+
+  #Proc name
   let constrName = (if isRef: "new" else: "init") & nameSym
 
   #First parameter is return type which is the type this constructor is for
@@ -56,7 +59,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     objConstr.add(newColonExpr(param[0], param[0]))
   #Set result so we can use the object later in the `_` code
   let assignment = newAssignment(ident("result"), objConstr)
-  #If we're supposed to export it add posfix
+  #If ref the convention is new, else init
   let nameNode = if expNode : postfix(ident(constrName), "*") else: ident(constrName)
   #Dont have nil if there is no postConstructLogic
   let procBody = if postConstructLogic.isNil: newStmtList(assignment) else: newStmtList(assignment,postConstructLogic)
