@@ -22,5 +22,5 @@ typeDef(Test, true):
             test.dBacker = value[0 .. 2]
 
         proc d*(test: Test): seq[int] =
-        test.dBacker
+            test.dBacker
 ]#
