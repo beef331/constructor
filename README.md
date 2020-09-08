@@ -1,7 +1,9 @@
 # Constructor
-Nim automated object constructors, it creates constructors with specified parameters to avoid named parameter constructors.
+A collection of useful macros, mostly related to the construction of objects.
+
 
 Simply use Nimble to install, then
+`construct` generates constructors so you can quickly write constructors without having to write extremely redundant code.
 ```nim
 import constructor
 
@@ -39,7 +41,7 @@ initAwbject()
 newBwbject(10,"This is a ref so uses new")# Notice refs do not use init but new
 
 ```
-This module also has a `typeDef` macro which can generate objects with properties.
+`typeDef` macro which can generate objects with properties.
 Below is the syntax.
 ```nim
 import ../src/constructor
@@ -58,3 +60,18 @@ a.d = @[100, 200, 300, 400]
 assert a.d == @[100 ,200, 300] #Means the Setter did the job
 ```
 
+`event` macro which generates an event, and coresponding procs to interact with it
+
+```nim
+event(TestEvent, int)
+
+var testEvent = TestEvent()
+
+proc countTo(a: int)= 
+    for x in 0..a:
+        echo x
+
+testEvent.add(countTo)
+
+testEvent.invoke(10)
+```

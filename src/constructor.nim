@@ -113,9 +113,12 @@ macro typeDef*(name: untyped, exported: static bool, body: untyped): untyped=
             valueIdent = ident("value")
             setter = quote do:
               proc `setterName`(`lowerName`: var `name`, `valueIdent` : `typeVal`)=
+                var `valueIdent` = `valueIdent` #Value is shadowed
                 `setterBody`
+                `lowerName`.`backerName` = `valueIdent` #Autoset it to value so we dont have to expose backer
             getter = quote do:
-              proc `getterName`(`lowerName`: `name`): `typeVal`= 
+              proc `getterName`(`lowerName`: `name`): `typeVal`=
+                result = `lowerName`.`backerName` #Let's us get the value from backer without manually exposing
                 `getterBody`
 
           if not setterBody.isNil: result.add setter
