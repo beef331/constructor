@@ -31,3 +31,4 @@ scoreEvent.remove(scored)
 
 
 awbject.score = 5
+assert awbject.score == 5

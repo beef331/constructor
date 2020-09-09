@@ -1,6 +1,12 @@
 import macros, tables, strutils, sequtils
 
 macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, body: untyped): untyped=
+  ##[
+      Generates constructor named initT for non refs and newT for refs
+      Bool indicates export
+      For each required field do name: required
+      To call logic after instantiation use _: the object is stored in result
+  ]##
   var 
     postConstructLogic: NimNode
     requiredParams: seq[NimNode]
@@ -69,6 +75,14 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
                    procBody)
 
 macro typeDef*(name: untyped, exported: static bool, body: untyped): untyped=
+  ##[
+    Generates a type with getter/setters
+    Bool indcates if exported.
+    Uses space seperated variables with `a = int`
+    In get `result` is the stored value
+    In set `value` is the passed in value
+    Get and set take a block of code
+  ]##
   result = newStmtList()
   let exportedName = if exported: postfix(name, "*") else: name #if we want to export the type make a postfix
   result.add quote do: #Make typeDeff

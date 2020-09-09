@@ -3,11 +3,10 @@ import ../src/constructor
 typeDef(Test, true):
         a b = int
         d = seq[int]:
-            get(true):
-                test.dBacker
+            get(true): return result
             set(true):
                 if value.len >= 1:
-                    test.dBacker = value[0..2]
+                    value = value[0..2]
 
 #[
     Generates:
