@@ -5,8 +5,7 @@ A collection of useful macros, mostly related to the construction of objects.
 Simply use Nimble to install, then
 `construct` generates constructors so you can quickly write constructors without having to write extremely redundant code.
 ```nim
-import constructor
-
+import ../src/constructor
 type
     Awbject = object
         awesome : float
@@ -17,29 +16,24 @@ type
         b : string
 
 Awbject.construct(false):
-    awesome: required
-    coolInt: 10
+    awesome = 1.5
+    coolInt = 10 #Uses = for default values
+
 Awbject.construct(true):
-    beautiful: "This is indeed"
-    awesome: 1.1
+    beautiful = "This is indeed" 
+    coolInt: 10 #Uses : to indicate it's optional
+    awesome: required #Uses required to indicate it's an required parameter
     _:
-    #[
-        Can call code after created.
-        'result' is where the constructed variable is stored.
-    ]#
-    echo "Heh"
+      echo "Created a new Awbject"
 
 Bwbject.construct(false):
     a: required
     b: required
 
 
-#Now these can be called
-initAwbject(1.5)
-initAwbject()
-
-newBwbject(10,"This is a ref so uses new")# Notice refs do not use init but new
-
+assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
+assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)
+assert newBwbject(10, "This is a ref so uses new")[] == Bwbject(a: 10, b: "This is a ref so uses new")[]
 ```
 `typeDef` macro which can generate objects with properties.
 Below is the syntax.
