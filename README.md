@@ -23,7 +23,7 @@ Awbject.construct(true):
     beautiful = "This is indeed" 
     coolInt: 10 #Uses : to indicate it's optional
     awesome: required #Uses required to indicate it's an required parameter
-    _:
+    _: #Code called after the creation of the object
       echo "Created a new Awbject"
 
 Bwbject.construct(false):
