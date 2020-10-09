@@ -15,11 +15,11 @@ type
         a : int
         b : string
 
-Awbject.construct(false):
+Awbject.construct(false): #false means it is not exported
     awesome = 1.5
     coolInt = 10 #Uses = for default values
 
-Awbject.construct(true):
+Awbject.construct(true): #true means it is exported
     beautiful = "This is indeed" 
     coolInt: 10 #Uses : to indicate it's optional
     awesome: required #Uses required to indicate it's an required parameter
