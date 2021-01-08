@@ -18,8 +18,7 @@ Awbject.construct(true):
     awesome: required #Uses required to indicate it's an required parameter
 
 Bwbject.construct(false):
-    a: required
-    b: required
+    (a, b): required
 
 
 assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
