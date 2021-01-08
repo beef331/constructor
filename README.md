@@ -27,9 +27,7 @@ Awbject.construct(true): #true means it is exported
       echo "Created a new Awbject"
 
 Bwbject.construct(false):
-    a: required
-    b: required
-
+    (a, b): required # Uses tuple semantics for multiple variables
 
 assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)
