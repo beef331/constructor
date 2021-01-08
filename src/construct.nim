@@ -14,18 +14,19 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     defaultValues: seq[(NimNode, NimNode)] #Left is ident, right is value
 
   for call in body:
+    let isRequired = (call[1].len > 0 and call[1][0].kind == nnkIdent and $call[1][0] == "required")
+
     if call.kind == nnkCall: #Required value
-      if call[0].kind == nnkPar: #Tuple
-        if call[1][0].kind == nnkIdent and $call[1][0] == "required":
-          for vari in call[0]: 
+      if call[0].kind == nnkPar: #Comma seperated identifiers
+        for vari in call[0]:
+          if isRequired:
             requiredParams.add(newCall(vari, call[1])) #Multiple required variables
-        else: #We know it's optional
-          for vari in call[0]:
+          else:
             optionalParams.add(newCall(vari, call[1])) 
       else:
         if $call[0] == "_":
           postConstructLogic = call[1] #This is the post constructed node position
-        if call[1][0].kind == nnkIdent and $call[1][0] == "required":
+        elif isRequired:
           requiredParams.add(call) #We know it's required
         else:
           optionalParams.add(call) #It's an optional value

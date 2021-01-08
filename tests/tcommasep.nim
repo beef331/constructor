@@ -11,7 +11,5 @@ type Vector = object
 Vector.construct(false):
   (x, y, z): required
   kind: Position
-  _:
-    echo "done!"
 
-echo initVector(1, 2, 3)
+assert initVector(1, 2, 3) == Vector(x: 1, y: 2, z: 3, kind: Position)
