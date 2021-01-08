@@ -1,2 +1,2 @@
-import construct, typedef, events
+import utils/[construct, typedef, events]
 export construct, typeDef, events

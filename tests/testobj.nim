@@ -1,4 +1,4 @@
-import ../src/constructor
+import constructor
 
 typeDef(Test, true):
         a b = int

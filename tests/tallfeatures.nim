@@ -1,8 +1,10 @@
-import ../src/[constructor,events]
+import constructor
 
 event(ScoreEvent, int)
 
-var scoreEvent = ScoreEvent()
+var 
+  scoreEvent = ScoreEvent()
+  count = 0
 
 typeDef(Awbject, true):
     score = int:
@@ -12,14 +14,11 @@ typeDef(Awbject, true):
             return result
 
 Awbject.construct(false):
-    _: echo "Created an Awbject"
+  _:discard
 
-proc scored(score: int) = echo "Score: " & $score
+proc scored(score: int) = count += 1
 
-proc laugh(score: int) =
-    echo "Laughing " & $score & " Times"
-    for i in 0..score:
-        echo "Laugh"
+proc laugh(score: int) = count += score
 
 scoreEvent.add(scored)
 scoreEvent.add(laugh)
@@ -32,3 +31,4 @@ scoreEvent.remove(scored)
 
 awbject.score = 5
 assert awbject.score == 5
+assert count == 17
