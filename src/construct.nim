@@ -14,13 +14,28 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
     defaultValues: seq[(NimNode, NimNode)] #Left is ident, right is value
 
   for call in body:
-    if $call[0] == "_": postConstructLogic = call[1] #This is the post constructed node position
-    elif call.kind ==  nnkCall and call[1][0].kind == nnkIdent and $call[1][0] == "required" :
-      requiredParams.add(call) #We know it's required
-    elif call.kind == nnkAsgn: #This is an assignment which means it's a default value
-      defaultValues.add (call[0], call[1]) 
-    else: 
-      optionalParams.add(call) #It's an optional value
+    if call.kind == nnkCall: #Required value
+      if call[0].kind == nnkPar: #Tuple
+        if call[1][0].kind == nnkIdent and $call[1][0] == "required":
+          for vari in call[0]: 
+            requiredParams.add(newCall(vari, call[1])) #Multiple required variables
+        else: #We know it's optional
+          for vari in call[0]:
+            optionalParams.add(newCall(vari, call[1])) 
+      else:
+        if $call[0] == "_":
+          postConstructLogic = call[1] #This is the post constructed node position
+        if call[1][0].kind == nnkIdent and $call[1][0] == "required":
+          requiredParams.add(call) #We know it's required
+        else:
+          optionalParams.add(call) #It's an optional value
+    else: #This is an assignment which means it's a default value
+      if call[0].kind == nnkPar:
+        for vari in call[0]:
+          defaultValues.add (vari, call[1]) #It's multiple fields to a default value
+      else:
+        defaultValues.add (call[0], call[1]) #It's a default value
+
   var node = T.getImpl #Get the Type Implementation
   let nameSym = $T
 
@@ -39,14 +54,13 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
 
   #Go for all vars and adding them to an identTable
   for varDecl in node:
-    let varType = varDecl[1]
+    let varType = varDecl[^2]
+
     for vari in varDecl:
       case vari.kind:
-        of nnkIdent: identType[$vari] = varType
-        of nnkPostfix: identType[$vari[1]] = varType #if exported it uses a postfix
+        of nnkIdent, nnkPostfix: identType[$vari.basename] = varType
         else: discard
-
-
+      
   #Proc name
   let constrName = (if isRef: "new" else: "init") & nameSym
 
