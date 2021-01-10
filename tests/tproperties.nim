@@ -1,4 +1,4 @@
-import testobj
+import objtest
 
 var a = Test()
 a.d = @[100, 200, 300, 400]
