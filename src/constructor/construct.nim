@@ -1,20 +1,16 @@
 import macros, tables
 
-macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, body: untyped): untyped=
-  ##[
-      Generates constructor named initT for non refs and newT for refs
-      Bool indicates export
-      For each required field do name: required
-      To call logic after instantiation use _: the object is stored in result
-  ]##
-  var 
+proc construct(T: NimNode, expNode: bool,
+    body: NimNode): NimNode =
+  var
     postConstructLogic: NimNode
     requiredParams: seq[NimNode]
     optionalParams: seq[NimNode]
     defaultValues: seq[(NimNode, NimNode)] #Left is ident, right is value
 
   for call in body:
-    let isRequired = (call[1].len > 0 and call[1][0].kind == nnkIdent and $call[1][0] == "required")
+    let isRequired = (call[1].len > 0 and call[1][0].kind == nnkIdent and $call[
+        1][0] == "required")
 
     if call.kind == nnkCall: #Required value
       if call[0].kind == nnkPar: #Comma seperated identifiers
@@ -22,7 +18,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
           if isRequired:
             requiredParams.add(newCall(vari, call[1])) #Multiple required variables
           else:
-            optionalParams.add(newCall(vari, call[1])) 
+            optionalParams.add(newCall(vari, call[1]))
       else:
         if $call[0] == "_":
           postConstructLogic = call[1] #This is the post constructed node position
@@ -61,7 +57,7 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
       case vari.kind:
         of nnkIdent, nnkPostfix: identType[$vari.basename] = varType
         else: discard
-      
+
   #Proc name
   let constrName = (if isRef: "new" else: "init") & nameSym
 
@@ -87,10 +83,30 @@ macro construct*(T : typedesc[object | distinct | ref], expNode : static bool, b
   #Set result so we can use the object later in the `_` code
   let assignment = newAssignment(ident("result"), objConstr)
   #If ref the convention is new, else init
-  let nameNode = if expNode : postfix(ident(constrName), "*") else: ident(constrName)
+  let nameNode = if expNode: postfix(ident(constrName), "*") else: ident(constrName)
   #Dont have nil if there is no postConstructLogic
-  let procBody = if postConstructLogic.isNil: newStmtList(assignment) else: newStmtList(assignment,postConstructLogic)
+  let procBody = if postConstructLogic.isNil: newStmtList(
+      assignment) else: newStmtList(assignment, postConstructLogic)
   #Where all our work ends
   result = newProc(nameNode,
                    parameters,
                    procBody)
+
+macro construct*(T: typedesc[object | distinct | ref], expNode: static bool,
+    body: untyped): untyped =
+  ##[
+      Generates constructor named initT for non refs and newT for refs.
+      Bool indicates export.
+      For each required field do name: required.
+      To call logic after instantiation use _: the object is stored in result.
+  ]##
+  T.construct(expNode, body)
+
+macro construct*(T: typedesc[object | distinct | ref], expNode: static bool): untyped =
+  ##[
+      Generates constructor named initT for non refs and newT for refs.
+      The created constructor has no parameters, identical to T().
+      Bool indactes export.
+  ]##
+  result = construct(T, expNode, newEmptyNode())
+  

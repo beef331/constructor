@@ -20,6 +20,9 @@ Awbject.construct(true):
 Bwbject.construct(false):
   (a, b): required
 
+Bwbject.construct(false) # Parameterless constructor identical to `T()`.
+
+
 
 assert initAwbject() == Awbject(awesome: 1.5, coolInt: 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)

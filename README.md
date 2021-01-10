@@ -15,19 +15,21 @@ type
         a : int
         b : string
 
-Awbject.construct(false): #false means it is not exported
+Awbject.construct(false): # false means it is not exported
     awesome = 1.5
-    coolInt = 10 #Uses = for default values
+    coolInt = 10 # Uses = for default values
 
-Awbject.construct(true): #true means it is exported
+Awbject.construct(true): # true means it is exported.
     beautiful = "This is indeed" 
-    coolInt: 10 #Uses : to indicate it's optional
-    awesome: required #Uses required to indicate it's an required parameter
-    _: #Code called after the creation of the object
+    coolInt: 10 #Uses : to indicate it's optional.
+    awesome: required # Uses required to indicate it's an required parameter.
+    _: # Code called after the creation of the object.
       echo "Created a new Awbject"
 
 Bwbject.construct(false):
-    (a, b): required # Uses tuple semantics for multiple variables
+    (a, b): required # Uses tuple semantics for multiple variables.
+
+Bwbject.construct(false) # Parameterless constructor identical to `T()`.
 
 assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)

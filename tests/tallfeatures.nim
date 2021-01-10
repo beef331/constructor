@@ -13,8 +13,7 @@ typeDef(*Awbject):
     get:
       return result
 
-Awbject.construct(false):
-  _: discard
+Awbject.construct(false)
 
 proc scored(score: int) = count += 1
 
