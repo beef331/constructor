@@ -1,12 +1,14 @@
 import constructor
 
-typeDef(Test, true):
-        a b = int
-        d = seq[int]:
-            get(true): return result
-            set(true):
-                if value.len >= 1:
-                    value = value[0..2]
+typeDef(*Test):
+  *(a, b) = int
+  c = string
+  d = seq[int]:
+    *get:
+      return result
+    *set:
+      if value.len >= 1:
+        value = value[0..2]
 
 #[
     Generates:

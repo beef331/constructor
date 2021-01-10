@@ -2,19 +2,19 @@ import constructor
 
 event(ScoreEvent, int)
 
-var 
+var
   scoreEvent = ScoreEvent()
   count = 0
 
-typeDef(Awbject, true):
-    score = int:
-        set:
-            scoreEvent.invoke(value)
-        get:
-            return result
+typeDef(*Awbject):
+  score = int:
+    set:
+      scoreEvent.invoke(value)
+    get:
+      return result
 
 Awbject.construct(false):
-  _:discard
+  _: discard
 
 proc scored(score: int) = count += 1
 

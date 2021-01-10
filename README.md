@@ -38,18 +38,21 @@ Below is the syntax.
 ```nim
 import ../src/constructor
 
-typeDef(Test, true):
-        a b = int
-        d = seq[int]:
-            get(true):
-                test.dBacker
-            set(true): #In setters value is the input value
-                if value.len >= 1:
-                    test.dBacker = value[0..2]
+import constructor
+
+typeDef(*Test): # Notice `*` used for exporting
+  *(a, b) = int # Uses tuple semantics for multiple vars
+  c = string
+  d = seq[int]:
+    *get: # `result` holds the returned value
+      return result
+    *set: # `value` holds the value before setting
+      if value.len >= 2:
+        value = value[0..2]
 
 var a = Test()
 a.d = @[100, 200, 300, 400]
-assert a.d == @[100 ,200, 300] #Means the Setter did the job
+assert a.d == @[100 ,200, 300] # Means the Setter did the job
 ```
 
 `event` macro which generates an event, and coresponding procs to interact with it

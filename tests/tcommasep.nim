@@ -1,9 +1,9 @@
 import constructor
 
-type 
+type
   VectorKind = enum
     Position, Speed, Acceleration
-  
+
 type Vector = object
   x, y, z: float
   kind: VectorKind
