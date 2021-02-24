@@ -29,7 +29,7 @@ Awbject.construct(true): # true means it is exported.
 Bwbject.construct(false):
     (a, b): required # Uses tuple semantics for multiple variables.
 
-Bwbject.construct(false) # Parameterless constructor identical to `T()`.
+Bwbject.construct(false) # All fields are required!.
 
 assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)

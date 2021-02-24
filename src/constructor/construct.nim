@@ -60,26 +60,35 @@ proc construct(T: NimNode, expNode: bool,
 
   #Proc name
   let constrName = (if isRef: "new" else: "init") & nameSym
+  #Ident tells the constructor the type
+  var objConstr = newNimNode(nnkObjConstr).add(ident($T))
 
   #First parameter is return type which is the type this constructor is for
   var parameters: seq[NimNode] = @[ident(nameSym)]
-  #For each parameter generate a new identdef
-  for req in requiredParams:
-    parameters.add(newIdentDefs(req[0], identType[$req[0]]))
+  if body.kind == nnkEmpty:
+    for ident, t in identType:
+      let ident = ident.ident # Converts the ident string to an ident
+      # Add all the fields as params
+      parameters.add(newIdentDefs(ident, t, newEmptyNode()))
+      #Generates a: a, for all arguments
+      objConstr.add(newColonExpr(ident, ident))
 
-  for opt in optionalParams:
-    parameters.add(newIdentDefs(opt[0], identType[$opt[0]], opt[1][0]))
+  else: # We have select params
+    #For each parameter generate a new identdef
+    for req in requiredParams:
+      parameters.add(newIdentDefs(req[0], identType[$req[0]]))
 
-  #Generate the constructor
-  #Ident tells the constructor the type
-  var objConstr = newNimNode(nnkObjConstr).add(ident($T))
-  #Generates a: a, for all arguements
-  for param in requiredParams:
-    objConstr.add(newColonExpr(param[0], param[0]))
-  for param in optionalParams:
-    objConstr.add(newColonExpr(param[0], param[0]))
-  for def in defaultValues:
-    objConstr.add(newColonExpr(def[0], def[1]))
+    for opt in optionalParams:
+      parameters.add(newIdentDefs(opt[0], identType[$opt[0]], opt[1][0]))
+
+    #Generates a: a, for all arguments
+    for param in requiredParams:
+      objConstr.add(newColonExpr(param[0], param[0]))
+    for param in optionalParams:
+      objConstr.add(newColonExpr(param[0], param[0]))
+    for def in defaultValues:
+      objConstr.add(newColonExpr(def[0], def[1]))
+
   #Set result so we can use the object later in the `_` code
   let assignment = newAssignment(ident("result"), objConstr)
   #If ref the convention is new, else init

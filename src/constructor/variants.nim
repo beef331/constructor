@@ -129,39 +129,6 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
     let name = ident($typeName.basename & "Nilable")
     result[1].add nnkTypeDef.newTree(typeName, newEmptyNode(), nnkInfix.newTree(ident("not"), name, newNilLit()))
 
-macro variantImpl(kind: enum, p: untyped): untyped =
-  result = newStmtList()
-  let
-    lambdaT = nnkProcTy.newNimNode()
-    lambda = nnkLambda.newNimNode()
-    name = 
-      if p[0].kind == nnkAccQuoted:
-        $p[0][0]
-      else:
-        $p[0].basename
-    arrCompName = ident(name & "CompTable")
-    arrName = ident(name & "Table")
-  lambdaT.add [p[3], newEmptyNode()]
-  p.copyChildrenTo(lambda)
-  lambda[0] = newEmptyNode()
-  
-  let 
-    newProc = p.copyNimTree()
-    firstParam = p[3][1][0]
-  newProc[^1] = newStmtList().add quote do:
-    `arrName`[`firstParam`.kind]()
-  for idef in p[3][1..^1]:
-    for idnt in idef[0..^3]:
-      newProc[^1][0].add(idnt)
-
-  
-  result.add quote do:
-    when not declared(`arrCompName`):
-      var `arrCompName`{.compileTime.}: array[`kind`.type, `lambdaT`]
-      const `arrName` = `arrCompName`
-      `newProc`
-    static:
-      `arrCompName`[`kind`] = `lambda`
 
 variant LambdaExp, true:
   Var:
@@ -173,13 +140,9 @@ variant LambdaExp, true:
     appName: string
     d: LambdaExp of Var
 
-proc `$`(l: LambdaExp): string {.variantImpl: Var.} = l.b
-proc `$`(l: LambdaExp): string {.variantImpl: Abs.} = l.absName & " " & $l.c
-proc `$`(l: LambdaExp): string {.variantImpl: App.} = l.appName & " " & $l.d
+
 
 let 
   a = initVar("Hello")
   b = initAbs("hehe", a)
   c = initApp("Hmmmm", a)
-echo b
-echo c
