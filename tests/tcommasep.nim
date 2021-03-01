@@ -1,4 +1,4 @@
-import constructor
+import constructor/construct
 
 type
   VectorKind = enum
