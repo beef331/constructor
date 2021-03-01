@@ -128,21 +128,3 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
   if recursive:
     let name = ident($typeName.basename & "Nilable")
     result[1].add nnkTypeDef.newTree(typeName, newEmptyNode(), nnkInfix.newTree(ident("not"), name, newNilLit()))
-
-
-variant LambdaExp, true:
-  Var:
-    b: string
-  Abs:
-    absName: string
-    c: LambdaExp of Var # Enforces only kinds of Var
-  App:
-    appName: string
-    d: LambdaExp of Var
-
-
-
-let 
-  a = initVar("Hello")
-  b = initAbs("hehe", a)
-  c = initApp("Hmmmm", a)
