@@ -90,15 +90,13 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
       body = globalBody.copyNimTree
     let procName = ident("init" & ($enm).capitalizeAscii)
     # Add each enum to the reclist ofBranch
-    if recursive:
-      result[1][0][2][0][2][^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
-    else:
-      result[1][0][2][2][1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
     let recList = 
-      if recursive: 
-        result[1][0][2][0][2][^1][^1][1]
+      if recursive:
+        result[1][0][2][0][2][^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
+        result[1][0][2][0][2][^1][^1][^1]
       else:
-        result[1][0][2][2][1][^1][1]
+        result[1][0][^1][^1][^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
+        result[1][0][^1][^1][^1][^1][^1]
     calls.insert newColonExpr(kindIdent, enm), 0
 
     for i, field in fields[$enm]:
@@ -128,3 +126,14 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
   if recursive:
     let name = ident($typeName.basename & "Nilable")
     result[1].add nnkTypeDef.newTree(typeName, newEmptyNode(), nnkInfix.newTree(ident("not"), name, newNilLit()))
+  result = parseStmt(result.repr)
+
+variant Test, false:
+  Hmm:
+    a: int
+  Huh:
+    c: float
+    f: int
+  _:
+    g: int
+echo initHmm(10, 10)
