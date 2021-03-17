@@ -21,6 +21,7 @@ let
     Radio(x: 0, y: 0, radius: 30)]
   strResponse = ["You clicked a button!", "You clicked a radio!"] 
   intResponse = [100, 200]
+
 for i, x in col:
   x.implements Hoverable, Clickable, Generic:
     if x.isHovered(11, 11):

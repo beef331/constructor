@@ -1,6 +1,6 @@
 import macros, tables, strutils
-{.experimental: "strictNotNil"}
 
+{.experimental:"strictNotNil".}
 type
   Field = object
     name: NimNode
@@ -13,7 +13,7 @@ type
 macro variant(name: untyped, publicEnum: static bool = false, body: untyped): untyped = 
   let 
     (typeName, enumName) = # New type name and enum name
-      if name.len > 0:
+      if name.len >= 0:
         (postfix(name[1], "*"), ident($name[1] & "Kind"))
       else:
         (name, ident($name & "Kind"))
@@ -21,7 +21,6 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
   var
     enums: seq[NimNode]
     fields: Table[string, seq[Field]] # Enum -> Fields
-    isPublic = typeName.len > 0
     recursive = false
   for decl in body:
     let
@@ -128,12 +127,14 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
     result[1].add nnkTypeDef.newTree(typeName, newEmptyNode(), nnkInfix.newTree(ident("not"), name, newNilLit()))
   result = parseStmt(result.repr)
 
-variant Test, false:
+variant *Test, true:
   Hmm:
     a: int
+  Err:
+    b: float
   Huh:
-    c: float
-    f: int
+    c: string
   _:
     g: int
-echo initHmm(10, 10)
+let 
+  hmm = initHmm(35432, 321)

@@ -72,3 +72,14 @@ testEvent.add(countTo)
 
 testEvent.invoke(10)
 ```
+
+`defaults` macro which allows you to easily generate a constructor with default values.
+
+```nim
+type Thingy{.defaults.} = object
+  a: float = 10 # Can do it this way
+  b = "Hmm" # Can also do it this way
+  c = 10
+implDefaults(Thingy) # Required to embed the procedure
+assert initThingy() == Thingy(a: 10, b: "Hmm", c: 10)
+```

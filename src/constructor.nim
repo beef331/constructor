@@ -1,2 +1,2 @@
-import constructor/[construct, typedef, events]
-export construct, typedef, events
+import constructor/[construct, typedef, events, defaults]
+export construct, typedef, events, defaults
