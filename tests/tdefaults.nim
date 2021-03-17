@@ -13,3 +13,10 @@ type Thing2 {.defaults.} = object
 
 implDefaults(Thing2)
 assert initThing2() == Thing2(a: @[initThingy(), initThingy()], b: "Good News Everyone", c: 3.1415)
+
+type RefThing {.defaults.} = ref object
+  a = 100
+  b* = "Hmmmm"
+  c*: float
+RefThing.implDefaults
+assert newRefThing()[] == RefThing(a: 100, b: "Hmmmm")[]
