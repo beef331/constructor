@@ -3,6 +3,7 @@ A collection of useful macros, mostly related to the construction of objects.
 
 
 Simply use Nimble to install, then
+## Construct
 `construct` generates constructors so you can quickly write constructors without having to write extremely redundant code.
 ```nim
 import ../src/constructor
@@ -35,6 +36,8 @@ assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)
 assert newBwbject(10, "This is a ref so uses new")[] == Bwbject(a: 10, b: "This is a ref so uses new")[]
 ```
+
+## Typedef
 `typeDef` macro which can generate objects with properties.
 Below is the syntax.
 ```nim
@@ -56,7 +59,7 @@ var a = Test()
 a.d = @[100, 200, 300, 400]
 assert a.d == @[100 ,200, 300] # Means the Setter did the job
 ```
-
+## Events
 `event` macro which generates an event, and coresponding procs to interact with it
 
 ```nim
@@ -73,6 +76,8 @@ testEvent.add(countTo)
 testEvent.invoke(10)
 ```
 
+
+## Defaults
 `defaults` macro which allows you to easily generate a constructor with default values.
 
 ```nim
