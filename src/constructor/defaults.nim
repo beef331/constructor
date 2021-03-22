@@ -29,7 +29,7 @@ macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
     if identDefs[^1].kind != nnkEmpty and identDefs[^2].kind == nnkEmpty:
       let expression = identDefs[^1]
       identDefs[^2] = quote do:
-        `expression`.type
+        type(`expression`)
     if identDefs[^1].kind != nnkEmpty:
       for ident in identDefs[0..^3]:
         constrParams.add newColonExpr(ident.basename, identDefs[^1])
