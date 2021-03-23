@@ -1,5 +1,7 @@
 import macros
 
+type EventBase* = object of RootObj
+
 macro event*(args: varargs[untyped]): untyped =
   let name = args[0]
   var
@@ -17,7 +19,7 @@ macro event*(args: varargs[untyped]): untyped =
     exportedName = postfix(name, "*") #We always export the event cause we're dumb
 
   result = newStmtList().add quote do:
-    type `exportedName` = object
+    type `exportedName` = object of EventBase
       listeners: seq[`procTy`]
     proc add*(evt: var `name`, newProc: `procTy`) =
       let ind = evt.listeners.find(newProc)
