@@ -57,6 +57,12 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
     globalCalls: seq[NimNode] # Shared passing in constructor
     globalBody = newStmtList() 
 
+  template recList(a: NimNode): NimNode =
+    if recursive:
+      result[1][0][2][0][2]
+    else:
+      result[1][0][2][2]
+
   for field in fields.getOrDefault("_", @[]):
     let t =
       if field.isVariant:
@@ -67,10 +73,7 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
     globalIdents.add identDef
 
     # Add field to object global
-    if recursive:
-      result[1][0][2][0][2].insert 0, identDef 
-    else:
-      result[1][0][2][2].insert 0, identDef 
+    result.recList.insert 0, identDef
 
     let fieldName = field.name
     globalCalls.add newColonExpr(fieldName, fieldName)
@@ -89,13 +92,9 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
       body = globalBody.copyNimTree
     let procName = ident("init" & ($enm).capitalizeAscii)
     # Add each enum to the reclist ofBranch
-    let recList = 
-      if recursive:
-        result[1][0][2][0][2][^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
-        result[1][0][2][0][2][^1][^1][^1]
-      else:
-        result[1][0][^1][^1][^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
-        result[1][0][^1][^1][^1][^1][^1]
+    let recList = block:
+      result.reclist[^1].add nnkOfBranch.newNimNode().add(enm, nnkRecList.newNimNode())
+      result.reclist[^1][^1][^1]
     calls.insert newColonExpr(kindIdent, enm), 0
 
     for i, field in fields[$enm]:
@@ -125,7 +124,7 @@ macro variant(name: untyped, publicEnum: static bool = false, body: untyped): un
   if recursive:
     let name = ident($typeName.basename & "Nilable")
     result[1].add nnkTypeDef.newTree(typeName, newEmptyNode(), nnkInfix.newTree(ident("not"), name, newNilLit()))
-  result = parseStmt(result.repr)
+#  result = parseStmt(result.repr)
 
 variant *Test, true:
   Hmm:

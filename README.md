@@ -6,7 +6,7 @@ Simply use Nimble to install, then
 ## Construct
 `construct` generates constructors so you can quickly write constructors without having to write extremely redundant code.
 ```nim
-import ../src/constructor
+import constructor/construct
 type
     Awbject = object
         awesome : float
@@ -36,6 +36,29 @@ assert initAwbject() == Awbject(awesome : 1.5, coolInt : 10)
 assert initAwbject(1.1) == Awbject(beautiful: "This is indeed", awesome: 1.1, coolInt: 10)
 assert newBwbject(10, "This is a ref so uses new")[] == Bwbject(a: 10, b: "This is a ref so uses new")[]
 ```
+
+## Constructor
+`constructor` works similarly to `construct` but does it with your own procedures so you can match your preferred method.
+You can pass other parameters to the object constructor by having a variable named the same in the main scope of the procedure.
+Aside from that it's practically like writting your own init procedure.
+```nim
+import constructor/constructor
+type
+  User = object
+    name: string
+    age: int
+    lastOnline: float
+
+proc initUser*(name: string, age: int): User {.constr.} =
+  let lastOnline = 30f
+
+proc init(T: typedesc[User], name: string, age: int) {.constr.} =
+  let lastOnline = 30f # can provide defaults/options in the main scope
+
+assert initUser("hello", 10) == User(name: "hello", lastOnline: 30f, age: 10)
+assert User.init("hello", 30) == User(name: "hello", lastOnline: 30f, age: 30)
+```
+
 
 ## Typedef
 `typeDef` macro which can generate objects with properties.
