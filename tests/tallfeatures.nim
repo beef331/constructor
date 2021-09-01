@@ -1,4 +1,4 @@
-import constructor
+import constructor/[construct, events, typedef]
 
 event(ScoreEvent, int)
 
