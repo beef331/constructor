@@ -1,6 +1,6 @@
 import std/[macros, sugar, macrocache, strutils]
 
-var defaultTable {.compileTime.}: CacheTable
+var defaultTable {.compileTime.} = CacheTable"Constr"
 
 macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
   result = tdef

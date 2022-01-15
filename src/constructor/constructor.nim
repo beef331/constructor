@@ -1,7 +1,5 @@
 import std/[macros, sets, sugar, strutils]
 
-import times
-
 macro constr*(p: typed): untyped =
   result = p.copyNimTree
   let retT = p.params[0]
@@ -11,7 +9,7 @@ macro constr*(p: typed): untyped =
       if def.kind != nnkIdentDefs:
         error("'constr' presently doesnt support object variants.", p)
       for field in def[0..^3]:
-        {($field).nimIdentNormalize}
+        {($field.basename).nimIdentNormalize}
 
   var
     constrStmt = nnkObjConstr.newTree(retT)
@@ -34,4 +32,3 @@ macro constr*(p: typed): untyped =
   else:
     result[^1] = newStmtList(nnkAsgn.newTree(ident"result", constrStmt)):
       result[^1]
-  echo result.repr
