@@ -5,7 +5,7 @@ type
     age: int
     lastOnline: float
 
-proc initUser*(name: string, age: int): User {.constr.} = discard
+proc initUser*(name: string, age: int): User {.constr.}
 
 proc init(T: typedesc[User], name: string, age: int): User {.constr.} =
   result.lastOnline = 30f

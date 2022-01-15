@@ -32,3 +32,5 @@ macro constr*(p: typed): untyped =
   else:
     result[^1] = newStmtList(nnkAsgn.newTree(ident"result", constrStmt)):
       result[^1]
+  if {p[^1].kind, p[^2].kind} == {nnkEmpty}:
+    result = newStmtList(p, result)
