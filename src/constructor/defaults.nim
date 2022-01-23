@@ -3,10 +3,10 @@ import std/[macros, sugar, macrocache, strutils]
 var defaultTable {.compileTime.} = CacheTable"Constr"
 
 macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
-  #Used as pragma. Enables annotating fields on an object type `tdef` with initialization values
-  #When `tdef` is a value allocated type, it generates a init<YOUR TYPE> proc.
-  #When `tdef` is a heap allocated object, it generates a new<YOUR TYPE> proc. 
-  #The procs are only generated after implDefaults(<YOUR TYPE>) is called.
+  ## Used as pragma. Enables annotating fields on an object type `tdef` with initialization values
+  ## When `tdef` is a value allocated type, it generates a init<YOUR TYPE> proc.
+  ## When `tdef` is a heap allocated object, it generates a new<YOUR TYPE> proc. 
+  ## The procs are only generated after implDefaults(<YOUR TYPE>) is called.
   runnableExamples:
     import std/options
     type
