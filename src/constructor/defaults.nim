@@ -3,6 +3,33 @@ import std/[macros, sugar, macrocache, strutils]
 var defaultTable {.compileTime.} = CacheTable"Constr"
 
 macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
+  #Used as pragma. Enables annotating fields on objects with initialization values
+  #When used with a value allocated type, it generates a init<YOUR TYPE> proc.
+  #When used with a heap allocated object, it generates a new<YOUR TYPE> proc. 
+  #The procs are only generated after implDefaults(<YOUR TYPE>) is called.
+  runnableExamples:
+    import std/options
+    type
+      B {.defaults.} = ref object of RootObj
+        myFloat: float = 1.2
+    
+    implDefaults(B)
+
+    type
+      A {.defaults.} = object
+        myInt: int = 5
+        myNoneOption: Option[int] = none(int)
+        mySomeOption: Option[int] = some(6)
+        myStr: string = "lala"
+        myNewB: B = newB()
+
+    implDefaults(A)
+    assert initA().myInt == 5
+    assert initA().myNoneOption == none(int)
+    assert initA().mySomeOption == some(6)
+    assert initA().myStr == "lala"
+    assert initA().myNewB.myFloat == 1.2
+
   result = tdef
   let name = $tdef[0][0].basename
   var
