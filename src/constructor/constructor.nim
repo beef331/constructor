@@ -1,6 +1,22 @@
 import std/[macros, sets, sugar, strutils]
 
 macro constr*(p: typed): untyped =
+  ## Used as pragma. Automatically creates an instance of the desired type within
+  ## results and populates it with the given parameters of the proc it is used on.
+  ## The parameter names must equal the field names on the instance that is
+  ## being created
+  runnableExamples:
+    import std/options
+
+    type
+      A* = object
+        myInt*: int
+        myOption*: Option[int] 
+        myStr*: string
+
+    proc initA(myInt: int, myOption: Option[int], myStr: string): A {.constr.}
+    assert initA(5, some(2), "hello") == A(myInt: 5, myOption: some(2), myStr: "hello")
+
   result = p.copyNimTree
   let retT = p.params[0]
 
