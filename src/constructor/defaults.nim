@@ -2,17 +2,21 @@ import std/[macros, sugar, macrocache, strutils]
 
 var defaultTable {.compileTime.} = CacheTable"Constr"
 
+type DefaultFlag* = enum
+  defExported   ## generate an exported procedure
+  defTypeConstr ## generate a procedure which has a `_: typedesc[Type]`
+
 macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
   ## Used as pragma. Enables annotating fields on an object type `tdef` with initialization values
   ## When `tdef` is a value allocated type, it generates a init<YOUR TYPE> proc.
-  ## When `tdef` is a heap allocated object, it generates a new<YOUR TYPE> proc. 
+  ## When `tdef` is a heap allocated object, it generates a new<YOUR TYPE> proc.
   ## The procs are only generated after implDefaults(<YOUR TYPE>) is called.
   runnableExamples:
     import std/options
     type
       B {.defaults.} = ref object of RootObj
         myFloat: float = 1.2
-    
+
     implDefaults(B)
 
     type
@@ -69,7 +73,19 @@ macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
   var newProc = newProc(procName, params, objCStr)
   defaultTable[result.repr.replace("*")] = newProc
 
-macro implDefaults*(t: typedesc[typed], exported: static bool = false): untyped =
-  result = defaultTable[t.getimpl.repr.replace("*")]
-  if exported and result[0].kind == nnkIdent:
+macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): untyped =
+  ## Implements the default intializing procedure
+  ## Flags can be passed to change behaviour.
+  ## Refer to DefaultFlag to see behaviour of those flags.
+  result = defaultTable[t.getimpl.repr.replace("*")].copyNimTree
+  if defTypeConstr in genFlags:
+    let typ = result[3][0]
+    result[3].insert 1, newIdentDefs(ident"_", nnkBracketExpr.newTree(ident"typedesc", typ), newEmptyNode())
+    let name =
+      if result[0].strVal.startsWith("new"):
+        ident"new"
+      else:
+        ident"init"
+    result[0] = name
+  if defExported in genFlags:
     result[0] = result[0].postfix("*")
