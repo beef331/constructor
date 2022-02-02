@@ -53,7 +53,7 @@ You can pass `implDefaults` a list of `DefaultFlag` flags to modify its behaviou
 Currently implemented flags are:
 
 -   `defExported` - Adds a '\*' to the proc so that it is exported (e.g. generates `newThingy\*()` instead of `newThingy()`)
--   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()` to `new(_: typedesc[Thingy])`. Use only with heap-allocated objects !
+-   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()`/`initThingy()` to `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
 
 ```nim
 import constructor/defaults
@@ -64,4 +64,10 @@ type Thingy{.defaults.} = ref object of RootObj
 
 implDefaults(Thingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
 assert new(Thingy) == Thingy(a: 10, b: "Hmm", c: 10)
+
+type OtherThingy{.defaults.} = object
+  d = "lula"
+
+implDefaults(OtherThingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
+assert init(OtherThingy) == OtherThingy(d: "lula")
 ```
