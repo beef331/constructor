@@ -22,7 +22,7 @@ type RefThing {.defaults.} = ref object
   a = 100
   b* = "Hmmmm"
   c* = SillyA
-RefThing.implDefaults {}
+RefThing.implDefaults
 RefThing.implDefaults {defTypeConstr}
 
 check newRefThing()[] == RefThing(a: 100, b: "Hmmmm", c: SillyA)[]

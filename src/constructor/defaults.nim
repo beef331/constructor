@@ -89,3 +89,6 @@ macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): unty
     result[0] = name
   if defExported in genFlags:
     result[0] = result[0].postfix("*")
+
+template implDefaults*(t: typedesc[typed]): untyped =
+  implDefaults(t, {})
