@@ -16,6 +16,7 @@ macro defaults*(tdef: untyped, hasRequires: static bool = false): untyped =
     type
       B {.defaults.} = ref object of RootObj
         myFloat: float = 1.2
+
     implDefaults(B)
 
     type
