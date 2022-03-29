@@ -1,4 +1,5 @@
 import std/[macros, sets, sugar, strutils]
+import micros
 
 macro constr*(p: typed): untyped =
   ## Used as pragma. Automatically creates an instance of the desired type within
@@ -17,33 +18,30 @@ macro constr*(p: typed): untyped =
     proc initA(myInt: int, myOption: Option[int], myStr: string): A {.constr.}
     assert initA(5, some(2), "hello") == A(myInt: 5, myOption: some(2), myStr: "hello")
 
-  result = p.copyNimTree
-  let retT = p.params[0]
+  let
+    routine = routineNode(p)
+    retT = routine.returnType
 
   let names = collect(initHashSet):
-    for def in retT.getImpl[2][2]:
-      if def.kind != nnkIdentDefs:
-        error("'constr' presently doesnt support object variants.", p)
-      for field in def[0..^3]:
-        {($field.basename).nimIdentNormalize}
+    for def in objectDef(retT).fields:
+      for field in def.names:
+        {($field.NimNode.baseName).nimIdentNormalize}
 
   var
     constrStmt = nnkObjConstr.newTree(retT)
     constrFields: HashSet[string]
 
-  template extractIdentDef(toIter: NimNode) =
-    for name in toIter[0..^3]:
-      let normalizedName = ($name).nimIdentNormalize
+  for defs in routine.params:
+    for name in defs.names:
+      let normalizedName = ($name.NimNode).nimIdentNormalize
       if normalizedName in constrFields:
-        error($name & " was provided previously.", name)
+        error(normalizedName & " was provided previously.", name.NimNode)
       if normalizedName in names:
         let idnt = ident(normalizedName)
         constrFields.incl normalizedName
         constrStmt.add nnkExprColonExpr.newTree(idnt, idnt)
 
-  for defs in result.params[1..^1]:
-    extractIdentDef(defs)
-
+  result = copyNimTree(p)
   if result[^2].kind != nnkEmpty and result[^1].kind == nnkSym:
     # Handles weird ast where last node is `sym` and second last is `body`
     result[^2] = newStmtList(nnkAsgn.newTree(result[^1], constrStmt), result[^2])
