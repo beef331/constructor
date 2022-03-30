@@ -1,4 +1,4 @@
-import std/[macros, sugar, macrocache, strutils]
+import std/[macros, sugar, macrocache, strutils, genasts]
 import micros
 var defaultTable {.compileTime.} = CacheTable"Constr"
 
@@ -34,6 +34,8 @@ macro defaults*(tdef: untyped): untyped =
     assert initA().myStr == "lala"
     assert initA().myNewB.myFloat == 1.2
 
+  result = tdef
+
   let
     objDef = objectDef(tdef)
     name = $objDef.name
@@ -55,9 +57,9 @@ macro defaults*(tdef: untyped): untyped =
 
   for identDef in objDef.fields:
     if identDef.val.kind != nnkEmpty and identDef.typ.kind == nnkEmpty:
-      let expression = identDef.val
-      identDef.NimNode[^2] = quote do:
-        type(`expression`)
+      identDef.typ =
+        genAst(expr = identDef.val):
+          typeof(expr)
     if identDef.val.kind != nnkEmpty:
       for ident in identDef.names:
         constrParams.add newColonExpr(ident.NimNode.basename, identDef.val)
@@ -68,9 +70,7 @@ macro defaults*(tdef: untyped): untyped =
       constrParams.add newColonExpr(ident, ident)
   let objCstr = nnkObjConstr.newTree(constrParams)
   var newProc = newProc(procName, params, objCStr)
-  result = tdef
   defaultTable[result.repr.replace("*")] = newProc
-
 
 macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): untyped =
   ## Implements the default intializing procedure
@@ -79,8 +79,7 @@ macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): unty
   result = defaultTable[t.getimpl.repr.replace("*")].copyNimTree
   let routine = routineNode(result)
   if defTypeConstr in genFlags:
-    let typ = routine.returnType
-    result[3].insert 1, newIdentDefs(ident"_", nnkBracketExpr.newTree(ident"typedesc", typ), newEmptyNode())
+    routine.insertIdentDef 0, identDefTyp("_", routine.returnType.makeTypeDesc())
     let name =
       if result[0].strVal.startsWith("new"):
         ident"new"

@@ -4,7 +4,7 @@ import constructor/defaults
 type Thingy {.defaults.} = object # Tests the basic operation
   a: float = 100
   b: string = "Hello world"
-implDefaults(Thingy, {})
+implDefaults(Thingy)
 
 check initThingy() == Thingy(a: 100f, b: "Hello world")
 
