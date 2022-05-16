@@ -27,3 +27,11 @@ RefThing.implDefaults {defTypeConstr}
 
 check newRefThing()[] == RefThing(a: 100, b: "Hmmmm", c: SillyA)[]
 check RefThing.new[] == RefThing(a: 100, b: "Hmmmm", c: SillyA)[]
+
+
+type
+  A = ref object of RootObj
+  B {.defaults.} = ref object of A
+    a = 100
+    b = 300
+B.implDefaults

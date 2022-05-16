@@ -76,7 +76,7 @@ macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): unty
   ## Implements the default intializing procedure
   ## Flags can be passed to change behaviour.
   ## Refer to DefaultFlag to see behaviour of those flags.
-  result = defaultTable[t.getimpl.repr.replace("*")].copyNimTree
+  result = defaultTable[t.getImpl.repr.replace("*")].copyNimTree
   let routine = routineNode(result)
   if defTypeConstr in genFlags:
     routine.insertIdentDef 0, identDefTyp("_", routine.returnType.makeTypeDesc())
