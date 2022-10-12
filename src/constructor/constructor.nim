@@ -21,7 +21,8 @@ macro constr*(p: typed): untyped =
   let
     routine = routineNode(p)
     retT = routine.returnType
-
+  if retT.kind == nnkEmpty:
+    error("Constructors requires a return type", retT)
   let names = collect(initHashSet):
     for def in objectDef(retT).fields:
       for field in def.names:
