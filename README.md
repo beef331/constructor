@@ -71,3 +71,26 @@ type OtherThingy{.defaults.} = object
 implDefaults(OtherThingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
 assert init(OtherThingy) == OtherThingy(d: "lula")
 ```
+
+
+## Struct Intialisers
+A variant of positional initialisers exists inside `constructor/structinits`.
+There are type checks to ensure safety and it works on `typedesc`s that are not object variants.
+
+```nim
+import constructor/structinits
+
+type
+  MyType = object
+    x, y: int
+    z: string
+  MyRef = ref MyType
+  MyGen[T] = object
+    x: int
+
+asset MyType.init(10, 20, "hello") == MyType(x: 10, y: 20, z: "hello")
+asset MyType.new(10, 20, "hello")[] == (ref MyType)(x: 10, y: 20, z: "hello")[]
+asset MyRef.new(10, 20, "Hello")[] == MyRef(x: 10, y: 20, z: "Hello")[]
+asset MyGen[int].init(100) == MyGen[int](x: 100)
+asset MyGen[int].new(100)[] == (ref MyGen[int])(x: 100)[]
+```
