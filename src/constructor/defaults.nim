@@ -1,4 +1,4 @@
-import std/[macros, sugar, macrocache, strutils, genasts]
+import std/[macros, macrocache, strutils, genasts]
 import micros
 var defaultTable {.compileTime.} = CacheTable"Constr"
 
@@ -49,25 +49,18 @@ macro defaults*(tdef: untyped): untyped =
         ident("new" & name)
       else:
         ident("init" & name)
-    requiredIdents = collect(newSeq):
-      for identDefs in objDef.fields:
-        if identDefs.val.kind == nnkEmpty:
-          params.add(identDefs.NimNode)
-          (identDefs.NimNode[0..^3], identDefs.typ)
+    emptyNode = newEmptyNode()
 
   for identDef in objDef.fields:
-    if identDef.val.kind != nnkEmpty and identDef.typ.kind == nnkEmpty:
-      identDef.typ =
-        genAst(expr = identDef.val):
-          typeof(expr)
     if identDef.val.kind != nnkEmpty:
+      if identDef.typ.kind == nnkEmpty:
+        identDef.typ =
+          genAst(expr = identDef.val):
+            typeof(expr)
       for ident in identDef.names:
         constrParams.add newColonExpr(ident.NimNode.basename, identDef.val)
-      identDef.val = newEmptyNode()
+      identDef.val = emptyNode
 
-  for (idents, _) in requiredIdents:
-    for ident in idents:
-      constrParams.add newColonExpr(ident, ident)
   let objCstr = nnkObjConstr.newTree(constrParams)
   var newProc = newProc(procName, params, objCStr)
   defaultTable[result.repr.replace("*")] = newProc

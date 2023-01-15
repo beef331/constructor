@@ -35,3 +35,11 @@ type
     a = 100
     b = 300
 B.implDefaults
+
+type
+  C {.defaults.} = object
+    a = 300
+    b: int
+C.implDefaults
+
+check initC() == C(a: 300)
