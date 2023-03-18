@@ -5,6 +5,13 @@ macro unpack(count: static int, args: varargs[typed]): untyped =
   # Retrieve the value inside a varargs of 'index'
   result = args[count]
 
+proc replaceBracketBase(expr, val: NimNode) =
+  var expr = expr
+  while expr[0].kind == nnkBracketExpr:
+    expr = expr[0]
+  expr[0] = nnkDotExpr.newTree(val, expr[0])
+
+
 macro init*(typ: typedesc[object], args: varargs[untyped]): untyped =
   ## init constructor that uses order of args to assign to type's fields.
   ## Presently only works for non object variants
@@ -26,17 +33,11 @@ macro init*(typ: typedesc[object], args: varargs[untyped]): untyped =
 
   for i, arg in args:
     if arg.kind == nnkExprEqExpr:
-      let left =
-        if arg[0].kind == nnkBracketExpr:
-          let bracketExpr = arg[0].copyNimTree
-          bracketExpr[0] = nnkDotExpr.newTree(res, bracketExpr[0])
-          bracketExpr
-        else:
-          arg[0]
+      arg[0].replaceBracketBase(res)
 
       addins.add:
         nnkAsgn.newTree(
-          left,
+          arg[0],
           arg[1]
         )
 

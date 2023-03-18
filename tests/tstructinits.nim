@@ -11,6 +11,7 @@ type
   MyArr = object
     x, y: int
     myArr: array[3, int]
+    myOtherArray: array[3, array[3, int]]
 
 check MyType.init(10, 20, "hello") == MyType(x: 10, y: 20, z: "hello")
 check MyType.new(10, 20, "hello")[] == (ref MyType)(x: 10, y: 20, z: "hello")[]
@@ -19,6 +20,7 @@ check MyGen[int].init(100) == MyGen[int](x: 100)
 check MyGen[int].new(100)[] == (ref MyGen[int])(x: 100)[]
 
 check MyArr.init(1, 2, myArr[0] = 3, myArr[1] = 4) == MyArr(x: 1, y: 2, myArr: [3, 4, 0])
+check MyArr.init(30, 40, myOtherArray[0][0] = 300) == MyArr(x: 30, y: 40, myOtherArray: [[300, 0, 0], [0, 0, 0], [0, 0, 0]])
 
 
 import std/[times]
