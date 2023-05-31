@@ -63,7 +63,7 @@ type Thingy{.defaults.} = ref object of RootObj
   c = 10
 
 implDefaults(Thingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
-assert new(Thingy) == Thingy(a: 10, b: "Hmm", c: 10)
+assert new(Thingy)[] == Thingy(a: 10, b: "Hmm", c: 10)[]
 
 type OtherThingy{.defaults.} = object
   d = "lula"
