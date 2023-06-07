@@ -8,7 +8,7 @@ A collection of useful macros, mostly related to the construction of objects.
 
 ## Constructor
 
-`constructor` works on procedures so you can match your preferred init method.
+`constr` works on procedures so you can match your preferred init method.
 You can pass other parameters to the object constructor by having a variable named the same in the main scope of the procedure.
 Aside from that it's practically like writting your own init procedure.
 
