@@ -37,9 +37,9 @@ macro defaults*(tdef: untyped): untyped =
   let
     objDef = objectDef(tdef).copy()
     name = $objDef.name
-    insideName = "Inside" & name
+    insideName = ident("Inside" & name)
   var
-    params = @[ident(insideName)]
+    params = @[insideName]
     constrParams = params
 
   let
@@ -63,21 +63,20 @@ macro defaults*(tdef: untyped): untyped =
   let objCstr = nnkObjConstr.newTree(constrParams)
   var newProc = newProc(procName, params, objCStr)
 
-  objDef.name = insideName
-  result = newTree(
-    nnkTypeDef,
-    ident(name),
-    newEmptyNode(),
-    newTree(
-      nnkObjectTy,
-      newEmptyNode(),
-      newEmptyNode(),
-      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, ident(insideName))
-    )
-  )
+
+  # objDef.name = insideName
+  result = tdef
+  NimNode(objDef)[0] = insideName
+  result[^1] = newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, insideName)
+  # result = newTree(
+  #   nnkTypeDef,
+  #   ident(name),
+  #   newEmptyNode(),
+  #   newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, insideName)
+  # )
 
   echo treeRepr result
-  echo repr result
+  # echo repr result
   # defaultTable[result.repr.replace("*")] = newProc
 
 macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): untyped =

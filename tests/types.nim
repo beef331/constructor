@@ -6,7 +6,9 @@ proc foo(x: Option[uint]): auto = x
 type Settings {.defaults.} = object
   a = foo(10u.some)
 
-implDefaults(Settings)
+echo initSettings()
+
+# implDefaults(Settings)
 
 # import nimgl/[imgui]
 # import constructor/defaults
