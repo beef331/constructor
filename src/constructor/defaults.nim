@@ -34,13 +34,12 @@ macro defaults*(tdef: untyped): untyped =
     assert initA().myStr == "lala"
     assert initA().myNewB.myFloat == 1.2
 
-  result = tdef
-
   let
-    objDef = objectDef(tdef)
+    objDef = objectDef(tdef).copy()
     name = $objDef.name
+    insideName = "Inside" & name
   var
-    params = @[ident(name)]
+    params = @[ident(insideName)]
     constrParams = params
 
   let
@@ -63,7 +62,23 @@ macro defaults*(tdef: untyped): untyped =
 
   let objCstr = nnkObjConstr.newTree(constrParams)
   var newProc = newProc(procName, params, objCStr)
-  defaultTable[result.repr.replace("*")] = newProc
+
+  objDef.name = insideName
+  result = newTree(
+    nnkTypeDef,
+    ident(name),
+    newEmptyNode(),
+    newTree(
+      nnkObjectTy,
+      newEmptyNode(),
+      newEmptyNode(),
+      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, ident(insideName))
+    )
+  )
+
+  echo treeRepr result
+  echo repr result
+  # defaultTable[result.repr.replace("*")] = newProc
 
 macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): untyped =
   ## Implements the default intializing procedure
