@@ -3,12 +3,13 @@ import constructor/defaults
 
 proc foo(x: Option[uint]): auto = x
 
-type Settings {.defaults.} = object
-  a = foo(10u.some)
+type
+  Settings* {.defaults: {defTypeConstr}.} = object
+    a = foo(10u.some)
 
-echo initSettings()
+# echo initSettings()
 
-# implDefaults(Settings)
+echo init(Settings)
 
 # import nimgl/[imgui]
 # import constructor/defaults
@@ -104,11 +105,11 @@ echo initSettings()
 #   Setting[void](display: display, help: help, kind: stCombo, items: items, comboRadioDefault: default, comboFlags: flags)
 
 # type
-#   Settings* {.defaults.} = object
+#   Settings* {.defaults: {}.} = object
 #     a* = inputSetting(display = "Text Input")
 #     b* = inputSetting(display = "Text Input With Hint", help = "Maximum 10 characters", hint = "type something", maxLength = some(10u))
 #     c* = checkSetting(display = "Checkbox", default = false)
 #     d* = comboSetting(display = "Combo", items = @["a", "b", "c"], default = "a")
 
-# implDefaults(Settings)
+# echo initSettings()
 

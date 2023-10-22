@@ -1,23 +1,19 @@
-import std/[macros, macrocache, strutils, genasts]
+import std/[macros, genasts]
 import micros
-var defaultTable {.compileTime.} = CacheTable"Constr"
 
 type DefaultFlag* = enum
   defExported   ## generate an exported procedure
   defTypeConstr ## generate a procedure which has a `_: typedesc[Type]`
 
-macro defaults*(tdef: untyped): untyped =
+macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
   ## Used as pragma. Enables annotating fields on an object type `tdef` with initialization values
   ## When `tdef` is a value allocated type, it generates a init<YOUR TYPE> proc.
   ## When `tdef` is a heap allocated object, it generates a new<YOUR TYPE> proc.
-  ## The procs are only generated after implDefaults(<YOUR TYPE>) is called.
   runnableExamples:
     import std/options
     type
       B {.defaults.} = ref object of RootObj
         myFloat: float = 1.2
-
-    implDefaults(B)
 
     type
       A {.defaults.} = object
@@ -27,7 +23,6 @@ macro defaults*(tdef: untyped): untyped =
         myStr: string = "lala"
         myNewB: B = newB()
 
-    implDefaults(A)
     assert initA().myInt == 5
     assert initA().myNoneOption == none(int)
     assert initA().mySomeOption == some(6)
@@ -35,21 +30,32 @@ macro defaults*(tdef: untyped): untyped =
     assert initA().myNewB.myFloat == 1.2
 
   let
-    objDef = objectDef(tdef).copy()
+    objDef = objectDef(tdef).copy() # This is just the object definiton (type Obj = object ...)
     name = $objDef.name
-    insideName = ident("Inside" & name)
+    innerIdent = ident("Inner") # This is the identificator of the inner type
   var
-    params = @[insideName]
-    constrParams = params
+    params = @[innerIdent] # First parameter is the return type
+    constrParams = params # constrParams are the parameters for the object constructor
 
   let
     procName =
       if tdef[2].kind == nnkRefTy:
-        ident("new" & name)
+        if defTypeConstr in genFlags:
+          ident("new")
+        else:
+          ident("new" & name)
       else:
-        ident("init" & name)
+        if defTypeConstr in genFlags:
+          ident("init")
+        else:
+          ident("init" & name)
+
     emptyNode = newEmptyNode()
 
+  if defTypeConstr in genFlags:
+    params.add newIdentDefs(ident("_"), innerIdent)
+
+  # Here we replace all fields a = 1 to a: typeof(1) in objDef
   for identDef in objDef.fields:
     if identDef.val.kind != nnkEmpty:
       if identDef.typ.kind == nnkEmpty:
@@ -60,41 +66,14 @@ macro defaults*(tdef: untyped): untyped =
         constrParams.add newColonExpr(ident.NimNode.basename, identDef.val)
       identDef.val = emptyNode
 
-  let objCstr = nnkObjConstr.newTree(constrParams)
-  var newProc = newProc(procName, params, objCStr)
+  let objCstr = nnkObjConstr.newTree(constrParams) # Object constructor: Obj(field1: val1, field2: val2)
+  let newProc = newProc(if defExported in genFlags: procName.postfix("*") else: procName, params, objCStr) # Initialization procedure
 
-
-  # objDef.name = insideName
   result = tdef
-  NimNode(objDef)[0] = insideName
-  result[^1] = newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, insideName)
-  # result = newTree(
-  #   nnkTypeDef,
-  #   ident(name),
-  #   newEmptyNode(),
-  #   newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, insideName)
-  # )
+  NimNode(objDef)[0] = innerIdent # Rename object definiton's name to innerIdent
+  result[^1] = newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, innerIdent)
 
-  echo treeRepr result
-  # echo repr result
-  # defaultTable[result.repr.replace("*")] = newProc
+# Doesn't work :[[[[
+template defaults*(tdef: untyped): untyped =
+  defaults({}, tdef)
 
-macro implDefaults*(t: typedesc[typed], genFlags: static set[DefaultFlag]): untyped =
-  ## Implements the default intializing procedure
-  ## Flags can be passed to change behaviour.
-  ## Refer to DefaultFlag to see behaviour of those flags.
-  result = defaultTable[t.getImpl.repr.replace("*")].copyNimTree
-  let routine = routineNode(result)
-  if defTypeConstr in genFlags:
-    routine.insertIdentDef 0, identDefTyp("_", routine.returnType.makeTypeDesc())
-    let name =
-      if result[0].strVal.startsWith("new"):
-        ident"new"
-      else:
-        ident"init"
-    result[0] = name
-  if defExported in genFlags:
-    result[0] = result[0].postfix("*")
-
-template implDefaults*(t: typedesc[typed]): untyped =
-  implDefaults(t, {})
