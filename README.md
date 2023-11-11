@@ -34,8 +34,8 @@ assert User.init("hello", 30) == User(name: "hello", lastOnline: 30f, age: 30)
 ## Defaults
 
 You can use the `defaults` macro, which allows you to easily generate a constructor with default values.
-If your type is a value-allocated type the constructor is `init<YOUR TYPE>()` (e.g. `initThingy()`).
-If your type is a heap-allocated object the constructor is `new<YOUR TYPE>()` (e.g. `newThingy()`).
+If your type is a value type the constructor is `init<YOUR TYPE>()` (e.g. `initThingy()`).
+If your type is a reference object the constructor is `new<YOUR TYPE>()` (e.g. `newThingy()`).
 
 ```nim
 import constructor/defaults
@@ -54,7 +54,7 @@ You can modify the generation of the defaults procedure by passing a set of `Def
 Currently implemented flags are:
 
 -   `defExported` - Adds a '\*' to the proc so that it is exported (e.g. generates `newThingy\*()` instead of `newThingy()`)
--   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()` to `new(_: typedesc Thingy)` and for value types from `initThingy()` to `init(_: typedesc[Thingy])`
+-   `defTypeConstr` - Changes the constructor signature for references from `newThingy()` to `new(_: typedesc Thingy)` and for value types from `initThingy()` to `init(_: typedesc[Thingy])`
 -   `defBothConstr` - Includes both `initThingy()`/`newThingy` and `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
 
 ```nim
