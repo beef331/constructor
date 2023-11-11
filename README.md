@@ -54,7 +54,7 @@ You can modify the generation of the defaults procedure by passing a set of `Def
 Currently implemented flags are:
 
 -   `defExported` - Adds a '\*' to the proc so that it is exported (e.g. generates `newThingy\*()` instead of `newThingy()`)
--   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()`/`initThingy()` to `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
+-   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()` to `new(_: typedesc Thingy)` and for value types from `initThingy()` to `init(_: typedesc[Thingy])`
 -   `defBothConstr` - Includes both `initThingy()`/`newThingy` and `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
 
 ```nim
