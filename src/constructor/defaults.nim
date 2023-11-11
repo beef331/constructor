@@ -3,7 +3,8 @@ import micros
 
 type DefaultFlag* = enum
   defExported   ## generate an exported procedure
-  defTypeConstr ## generate a procedure which has a `_: typedesc[Type]`
+  defTypeConstr ## generate only a `init(MyType)` procedure
+  defBothConstr ## generates both `init(MyType)` and `initMyType()` procedures
 
 macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
   ## Used as pragma. Enables annotating fields on an object type `tdef` with initialization values
@@ -12,11 +13,11 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
   runnableExamples:
     import std/options
     type
-      B {.defaults.} = ref object of RootObj
+      B {.defaults: {}.} = ref object of RootObj
         myFloat: float = 1.2
 
     type
-      A {.defaults.} = object
+      A {.defaults: {}.} = object
         myInt: int = 5
         myNoneOption: Option[int] = none(int)
         mySomeOption: Option[int] = some(6)
@@ -32,28 +33,23 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
   let
     objDef = objectDef(tdef).copy() # This is just the object definiton (type Obj = object ...)
     name = $objDef.name
-    innerIdent = ident("Inner") # This is the identificator of the inner type
+    innerIdent = ident("Inner" & name)#genSym(nskType, ident = "Inner") # This is the identificator of the inner type
   var
-    params = @[innerIdent] # First parameter is the return type
+    # First parameter is the return type
+    params = @[innerIdent]
     constrParams = params # constrParams are the parameters for the object constructor
 
   let
-    procName =
+    procNameBase =
       if tdef[2].kind == nnkRefTy:
-        if defTypeConstr in genFlags:
-          ident("new")
-        else:
-          ident("new" & name)
+        "new"
       else:
-        if defTypeConstr in genFlags:
-          ident("init")
-        else:
-          ident("init" & name)
+        "init"
+
+    typeProcName = ident(procNameBase)
+    procName = ident(procNameBase & name)
 
     emptyNode = newEmptyNode()
-
-  if defTypeConstr in genFlags:
-    params.add newIdentDefs(ident("_"), innerIdent)
 
   # Here we replace all fields a = 1 to a: typeof(1) in objDef
   for identDef in objDef.fields:
@@ -67,13 +63,20 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
       identDef.val = emptyNode
 
   let objCstr = nnkObjConstr.newTree(constrParams) # Object constructor: Obj(field1: val1, field2: val2)
+
   let newProc = newProc(if defExported in genFlags: procName.postfix("*") else: procName, params, objCStr) # Initialization procedure
+
+  params.add newIdentDefs(ident("_"), newTree(nnkBracketExpr, ident("typedesc"), innerIdent))
+
+  let newTypeProc = newProc(if defExported in genFlags: typeProcName.postfix("*") else: typeProcName, params, objCStr) # Initialization procedure
 
   result = tdef
   NimNode(objDef)[0] = innerIdent # Rename object definiton's name to innerIdent
-  result[^1] = newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, innerIdent)
-
-# Doesn't work :[[[[
-template defaults*(tdef: untyped): untyped =
-  defaults({}, tdef)
+  result[^1] =
+    if defBothConstr in genFlags:
+      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, newTypeProc, innerIdent)
+    elif defTypeConstr in genFlags:
+      newStmtList(newTree(nnkTypeSection, NimNode objDef), newTypeProc, innerIdent)
+    else:
+      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, innerIdent)
 
