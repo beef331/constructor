@@ -33,43 +33,45 @@ assert User.init("hello", 30) == User(name: "hello", lastOnline: 30f, age: 30)
 
 ## Defaults
 
-You can use the `defaults` and `implDefaults` macros, which allow you to easily generate a constructor with default values.
+You can use the `defaults` macro, which allows you to easily generate a constructor with default values.
 If your type is a value-allocated type the constructor is `init<YOUR TYPE>()` (e.g. `initThingy()`).
 If your type is a heap-allocated object the constructor is `new<YOUR TYPE>()` (e.g. `newThingy()`).
 
 ```nim
 import constructor/defaults
-type Thingy{.defaults.} = object
+
+type Thingy {.defaults: {}.} = object
   a: float = 10 # Can do it this way
   b = "Hmm" # Can also do it this way
   c = 10
-implDefaults(Thingy) # Required to embed the procedure
+
 assert initThingy() == Thingy(a: 10, b: "Hmm", c: 10)
 ```
 
-### Modifying implDefaults
+### Flags
 
-You can pass `implDefaults` a list of `DefaultFlag` flags to modify its behaviour.
+You can modify the generation of the defaults procedure by passing a set of `DefaultFlag` flags.
 Currently implemented flags are:
 
 -   `defExported` - Adds a '\*' to the proc so that it is exported (e.g. generates `newThingy\*()` instead of `newThingy()`)
 -   `defTypeConstr` - Changes the constructor signature for heap-allocated from `newThingy()`/`initThingy()` to `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
+-   `defBothConstr` - Includes both `initThingy()`/`newThingy` and `new(_: typedesc[Thingy])`/`init(_: typedesc[Thingy])`
 
 ```nim
 import constructor/defaults
-type Thingy{.defaults.} = ref object of RootObj
+
+type Thingy {.defaults: {defExported, defTypeConstr}.} = ref object of RootObj
   a: float = 10 # Can do it this way
   b = "Hmm" # Can also do it this way
   c = 10
 
-implDefaults(Thingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
 assert new(Thingy)[] == Thingy(a: 10, b: "Hmm", c: 10)[]
 
-type OtherThingy{.defaults.} = object
+type OtherThingy {.defaults: {defBothConstr}.} = object
   d = "lula"
 
-implDefaults(OtherThingy, {DefaultFlag.defExported, DefaultFlag.defTypeConstr})
 assert init(OtherThingy) == OtherThingy(d: "lula")
+assert initOtherThingy() == OtherThingy(d: "lula")
 ```
 
 
