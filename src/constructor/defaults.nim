@@ -33,23 +33,24 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
   let
     objDef = objectDef(tdef).copy() # This is just the object definiton (type Obj = object ...)
     name = $objDef.name
-    innerIdent = ident("Inner" & name)#genSym(nskType, ident = "Inner") # This is the identificator of the inner type
-  var
-    # First parameter is the return type
-    params = @[innerIdent]
-    constrParams = params # constrParams are the parameters for the object constructor
-
-  let
-    procNameBase =
+    innerIdent = genSym(nskType, ident = "Inner") # Inner type identificator
+    innerIdentTypedesc = newTree(nnkBracketExpr, ident("typedesc"), innerIdent) # typedesc[InnerType]
+    procIdentBase =
       if tdef[2].kind == nnkRefTy:
         "new"
       else:
         "init"
-
-    typeProcName = ident(procNameBase)
-    procName = ident(procNameBase & name)
-
     emptyNode = newEmptyNode()
+
+  var
+    params = @[innerIdent] # First parameter is the return type
+    constrParams = params # Object constructor parameters, first param is the constructor type
+    typeProcIdent = ident(procIdentBase)
+    procIdent = ident(procIdentBase & name)
+
+  if defExported in genFlags:
+    typeProcIdent = typeProcIdent.postfix("*")
+    procIdent = procIdent.postfix("*")
 
   # Here we replace all fields a = 1 to a: typeof(1) in objDef
   for identDef in objDef.fields:
@@ -64,19 +65,28 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
 
   let objCstr = nnkObjConstr.newTree(constrParams) # Object constructor: Obj(field1: val1, field2: val2)
 
-  let newProc = newProc(if defExported in genFlags: procName.postfix("*") else: procName, params, objCStr) # Initialization procedure
+  # Initialization procedures: initThingy() and init(Thingy)
+  let newProc = newProc(procIdent, params, objCStr)
 
-  params.add newIdentDefs(ident("_"), newTree(nnkBracketExpr, ident("typedesc"), innerIdent))
+  params.add newIdentDefs(ident("_"), innerIdentTypedesc)
 
-  let newTypeProc = newProc(if defExported in genFlags: typeProcName.postfix("*") else: typeProcName, params, objCStr) # Initialization procedure
+  let newTypeProc = newProc(typeProcIdent, params, objCStr)
+
+  # This procedure checks for instantiation errors
+  let checkProc = newProc(genSym(nskProc, "checker"), body = newTree(nnkDiscardStmt, newCall(ident(procIdentBase), innerIdentTypedesc)))
+
+  var body = newStmtList(newTree(nnkTypeSection, NimNode objDef))
+
+  if defBothConstr in genFlags:
+    body.add(newProc, newTypeProc, checkProc)
+  elif defTypeConstr in genFlags:
+    body.add(newTypeProc, checkProc)
+  else:
+    body.add(newProc)
+
+  body.add(innerIdent)
 
   result = tdef
   NimNode(objDef)[0] = innerIdent # Rename object definiton's name to innerIdent
-  result[^1] =
-    if defBothConstr in genFlags:
-      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, newTypeProc, innerIdent)
-    elif defTypeConstr in genFlags:
-      newStmtList(newTree(nnkTypeSection, NimNode objDef), newTypeProc, innerIdent)
-    else:
-      newStmtList(newTree(nnkTypeSection, NimNode objDef), newProc, innerIdent)
+  result[^1] = body
 
