@@ -1,6 +1,6 @@
 # Package
 
-version       = "1.2.0"
+version       = "1.2.1"
 author        = "Jason Beetham"
 description   = "Automates constructor creation"
 license       = "MIT"

@@ -1,6 +1,17 @@
 import std/[macros, sets, sugar, strutils]
 import micros
 
+proc desymAll(tree: NimNode) =
+  for i, n in tree:
+    if n.kind == nnkSym:
+      tree[i] = ident $n
+    else:
+      desymAll(n)
+
+proc desym(tree: NimNode): NimNode =
+  result = tree.copyNimTree()
+  result.desymAll()
+
 macro constr*(p: typed): untyped =
   ## Used as pragma. Automatically creates an instance of the desired type within
   ## results and populates it with the given parameters of the proc it is used on.
@@ -18,18 +29,20 @@ macro constr*(p: typed): untyped =
     proc initA(myInt: int, myOption: Option[int], myStr: string): A {.constr.}
     assert initA(5, some(2), "hello") == A(myInt: 5, myOption: some(2), myStr: "hello")
 
-  let
-    routine = routineNode(p)
-    retT = routine.returnType
+  let routine = routineNode(p)
+  var retT = routine.returnType
   if retT.kind == nnkEmpty:
     error("Constructors requires a return type", retT)
+  if retT.typeKind == ntyGenericInvocation:
+    retT = retT[0]
+
   let names = collect(initHashSet):
     for def in objectDef(retT).fields:
       for field in def.names:
         {($field.NimNode.baseName).nimIdentNormalize}
 
   var
-    constrStmt = nnkObjConstr.newTree(retT)
+    constrStmt = nnkObjConstr.newTree(routine.returnType.desym())
     constrFields: HashSet[string]
 
   for defs in routine.params:
