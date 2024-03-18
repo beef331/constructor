@@ -34,16 +34,30 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
     objDef = objectDef(tdef).copy() # This is just the object definiton (type Obj = object ...)
     name = $objDef.name
     innerIdent = genSym(nskType, ident = "Inner") # Inner type identificator
-    innerIdentTypedesc = newTree(nnkBracketExpr, ident("typedesc"), innerIdent) # typedesc[InnerType]
     procIdentBase =
       if tdef[2].kind == nnkRefTy:
         "new"
       else:
         "init"
     emptyNode = newEmptyNode()
+    innerIdentGeneric = newTree(nnkBracketExpr, innerIdent) # This is innerIdent with the generic parameters of objDef
+    procGenericParams = newTree(nnkGenericParams) # These are the generic params for the init/new procedures
+
+  # Here we collect all the names for the generic params [A, B: int = 1, C] -> [A, B, C]
+  for identdef in objDef.genericParams:
+    procGenericParams.add NimNode identdef
+    for name in identdef.names:
+      innerIdentGeneric.add NimNode name
+
+  let
+    # Inner//Inner[T]
+    innerIdent2 = # I know, horrible name
+      if procGenericParams.len > 0: innerIdentGeneric
+      else: innerIdent
+    innerIdentTypedesc = newTree(nnkBracketExpr, ident("typedesc"), innerIdent2) # typedesc[InnerType]
 
   var
-    params = @[innerIdent] # First parameter is the return type
+    params = @[innerIdent2] # First parameter is the return type
     constrParams = params # Object constructor parameters, first param is the constructor type
     typeProcIdent = ident(procIdentBase)
     procIdent = ident(procIdentBase & name)
@@ -72,7 +86,10 @@ macro defaults*(genFlags: static set[DefaultFlag], tdef: untyped): untyped =
 
   let newTypeProc = newProc(typeProcIdent, params, objCStr)
 
-  # This procedure checks for instantiation errors
+  newProc[2] = procGenericParams
+  newTypeProc[2] = procGenericParams
+
+  # This procedure checks for instantiation errors when defTypeConstr or defBothConstr
   let checkProc = newProc(genSym(nskProc, "checker"), body = newTree(nnkDiscardStmt, newCall(ident(procIdentBase), innerIdentTypedesc)))
 
   var body = newStmtList(newTree(nnkTypeSection, NimNode objDef))
