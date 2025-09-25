@@ -1,133 +1,77 @@
-import std/[macros, genasts, strutils, intsets]
+import std/macros
 
+macro applyArgs(val: typed, fields: varargs[untyped]): untyped =
+  result = newStmtList()
+  for x in fields:
+    case x[0].kind
+    of nnkIdent:
+      result.add nnkAsgn.newTree(nnkDotExpr.newTree(val, x[0]), x[1])
+    of nnkBracketExpr:
+      let origNode = x[0]
+      var node = origNode
+      while node[0].kind == nnkBracketExpr:
+        node = node[0]
+      node[0] = nnkDotExpr.newTree(val, node[0])
 
-macro unpack(count: static int, args: varargs[typed]): untyped =
-  # Retrieve the value inside a varargs of 'index'
-  result = args[count]
-
-proc replaceBracketBase(expr, val: NimNode) =
-  var expr = expr
-  while expr[0].kind == nnkBracketExpr:
-    expr = expr[0]
-  expr[0] = nnkDotExpr.newTree(val, expr[0])
-
-
-macro init*(typ: typedesc[object], args: varargs[untyped]): untyped =
-  ## init constructor that uses order of args to assign to type's fields.
-  ## Presently only works for non object variants
-  runnableExamples:
-    type MyType = object
-      x, y: int
-      z: string
-    assert MyType.init(10, 20, "hello") == MyType(x: 10, y: 20, z: "hello")
-
-  let
-    i = gensym(nskVar, "i")
-    paramCounter = gensym(nskVar, "paramCounter")
-    unpackCall = newCall(bindSym"unpack", paramCounter)
-    res = genSym(nskVar, "result")
-
-  var
-    addins = newStmtList()
-    lastVal = -1
-
-  for i, arg in args:
-    if arg.kind == nnkExprEqExpr:
-      arg[0].replaceBracketBase(res)
-
-      addins.add:
-        nnkAsgn.newTree(
-          arg[0],
-          arg[1]
-        )
-
-      if lastVal < 0:
-        lastVal = i
-
+      result.add nnkAsgn.newTree(
+        origNode,
+        x[1]
+      )
     else:
-      if lastVal >= 0:
-        error("Provided positional setter, following expression setters ambiguous what to do.", arg)
-      unpackCall.add arg
+      error("Incorrect field initer", x)
 
-  if addins.len == 0:
-    lastVal = args.len
-
-  result = genast(res, typ, args, i, unpackCall, addins, lastVal, paramCounter):
-    var res: typ
-    var paramCounter {.compileTime, global.} = 0
-    static: paramCounter = 0
-    for name, field in res.fieldPairs: # Perhaps use disruptek's assume here
-      when paramCounter < lastVal:
-        when not compiles((let a: typeof(field) = unpackCall)):
-          {.error: "Field '$#' (position $#) is of type '$#', but got a value type of '$#'." % [name, $paramCounter, $typeof(field), $typeof(unpackCall)].}
-        field = unpackCall
-        static: inc paramCounter
-
-
-    addins
-    res
-
-macro new*(typ: typedesc[ref object or object], args: varargs[untyped]): untyped =
-  ## Same as init but heap allocates instead, accepts `ref object` or `object` making `object` into a `ref`.
-  ## Presently only works for non object variants
+template init*(typ: typedesc[object], args: varargs[untyped]): untyped =
+  ## initializes an object from a type
   runnableExamples:
-    type MyType = object
-      x, y: int
-      z: string
-    assert MyType.new(10, 20, "hello")[] == (ref MyType)(x: 10, y: 20, z: "hello")[]
+    type MyObject = object
+      a, b: int
+      z: array[3, int]
+    assert MyObject.init(x = 30, b = 10, z[0] = 3, z[1..2] = [1, 2]) == MyObject(a: 30, b: 10, z: [0, 1, 2])
 
-  let
-    i = gensym(nskVar, "i")
-    paramCounter = gensym(nskVar, "paramCounter")
-    unpackCall = newCall(bindSym"unpack", paramCounter)
-    res = genSym(nskVar, "result")
+  var val = typ()
+  applyArgs(val, args)
+  val
 
-  var
-    addins = newStmtList()
-    lastVal = -1
+template init*(val: object, args: varargs[untyped]): untyped =
+  ## initializes an object from a value, this lets using `someVar.init(...)`
+  runnableExamples:
+    type MyObject = object
+      a, b: int
+      z: array[3, int]
+    assert MyObject(a: 30, b: 10).init(z[0] = 3, z[1..2] = [1, 2]) == MyObject(a: 30, b: 10, z: [0, 1, 2])
+  var it = val
+  applyArgs(it, args)
+  it
 
-  for i, arg in args:
-    if arg.kind == nnkExprEqExpr:
-      let left =
-        if arg[0].kind == nnkBracketExpr:
-          let bracketExpr = arg[0].copyNimTree
-          bracketExpr[0] = nnkDotExpr.newTree(res, bracketExpr[0])
-          bracketExpr
-        else:
-          arg[0]
+template new*(typ: typedesc[ref object | object], args: varargs[untyped]): untyped =
+  ## allocates a new object from a type
+  runnableExamples:
+    type
+      MyObject = object
+        a, b: int
+        z: array[3, int]
+      RefObj = ref MyObject
+    assert MyObject.new(a = 30, b = 10, z[0] = 3, z[1..2] = [1, 2])[] == RefObj(a: 30, b: 10, z: [0, 1, 2])[]
+    assert MyRef.new(a = 30, b = 10, z[0] = 3, z[1..2] = [1, 2])[] == RefObj(a: 30, b: 10, z: [0, 1, 2])[]
 
-      addins.add:
-        nnkAsgn.newTree(
-          left,
-          arg[1]
-        )
+  var val = system.new typ
+  applyArgs(val, args)
+  val
 
-      if lastVal < 0:
-        lastVal = i
+template new*(val: typed, args: varargs[untyped]): untyped =
+  runnableExamples:
+    type
+      MyObject = object
+        a, b: int
+        z: array[3, int]
+      RefObj = ref MyObject
+    assert MyObject(a: 30, b: 10).new(z[0] = 3, z[1..2] = [1, 2])[] == RefObj(a: 30, b: 10, z: [0, 1, 2])[]
+    assert MyRef(a: 30, b: 10).new(z[0] = 3, z[1..2] = [1, 2])[] == RefObj(a: 30, b: 10, z: [0, 1, 2])[]
+  when val is ref:
+    var it = val
+  else:
+    var it = new typeof(val)
+    it[] = val
 
-    else:
-      if lastVal >= 0:
-        error("Provided positional setter, following expression setters ambiguous what to do.", arg)
-      unpackCall.add arg
-
-  if addins.len == 0:
-    lastVal = args.len
-
-  result = genast(res, typ, args, i, unpackCall, addins, lastVal, paramCounter):
-    var res = system.new(typ)
-    var paramCounter {.compileTime, global.} = 0
-    static: paramCounter = 0
-    for name, field in res[].fieldPairs: # Perhaps use disruptek's assume here
-      when paramCounter < lastVal:
-        when not compiles((let a: typeof(field) = unpackCall)):
-          {.error: "Field '$#' (position $#) is of type '$#', but got a value type of '$#'." % [name, $paramCounter, $typeof(field), $typeof(unpackCall)].}
-        field = unpackCall
-        static: inc paramCounter
-
-
-    addins
-    res
-
-
-
-
+  applyArgs(it, args)
+  it
